@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import audioRoutes from "./routes/audio.routes.js";
+import favoritesRoutes from "./routes/favorites.routes.js";
 import musicRoutes from "./routes/music.routes.js";
 import testRoutes from "./routes/test.routes.js";
 
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use("/api", testRoutes);
 app.use("/api/music", musicRoutes);
 app.use("/api/audio", audioRoutes);
+app.use("/api/favorites", favoritesRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running...");

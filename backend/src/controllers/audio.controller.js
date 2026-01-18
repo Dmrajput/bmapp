@@ -160,7 +160,24 @@ export const getAudioByCategory = async (req, res) => {
   try {
     const { category } = req.params;
 
-    const audioList = await Audio.find({ category }).sort({ createdAt: -1 });
+    const escapeRegExp = (value) =>
+      value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const searchValue = String(category || "").trim();
+    const normalized = searchValue
+      .replace(/[\/_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const tokens = normalized.split(" ").filter(Boolean).map(escapeRegExp);
+    const pattern = tokens.length
+      ? tokens.join(".*")
+      : escapeRegExp(searchValue);
+
+    const audioList = await Audio.find({
+      category: {
+        $regex: pattern,
+        $options: "i",
+      },
+    }).sort({ createdAt: -1 });
 
     if (audioList.length === 0) {
       return res.status(200).json({

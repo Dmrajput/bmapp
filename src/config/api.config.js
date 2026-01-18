@@ -3,7 +3,7 @@
 
 /**
  * Get the appropriate API base URL based on the platform
- * 
+ *
  * Platform-specific URLs:
  * - Web (browser): http://localhost:5000/api
  * - iOS Simulator: http://localhost:5000/api
@@ -12,28 +12,10 @@
  */
 
 export const getApiBaseUrl = () => {
-  return 'http://10.82.24.62:5000/api';
-//   return 'http://localhost:5000/api';
-//   if (typeof window !== 'undefined' && window.location) {
-//     return 'http://localhost:5000/api';
-//   }
-  
-//   // For React Native
-//   if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
-//     // Detect platform
-//     const Platform = require('react-native').Platform;
-    
-//     if (Platform.OS === 'android') {
-//       // Android emulator uses special alias to access host machine
-//       return 'http://10.82.24.62:5000/api';
-//     } else if (Platform.OS === 'ios') {
-//       // iOS simulator can use localhost
-//       return 'http://localhost:5000/api';
-//     }
-//   }
-  
-//   // Default fallback
-//   return 'http://localhost:5000/api';
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (envUrl) {
+    return envUrl;
+  }
 };
 
 // For real devices, uncomment and set your computer's IP address:

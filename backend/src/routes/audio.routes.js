@@ -1,16 +1,16 @@
 import express from "express";
-import { uploadFields } from "../middlewares/upload.middleware.js";
-import { 
-  uploadAudio,
+import {
   getAllAudio,
+  getAudioByCategory,
   getAudioById,
-  getAudioByCategory
+  uploadAudio,
 } from "../controllers/audio.controller.js";
+import { uploadFields } from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
 // POST /api/audio/upload - Upload audio file with metadata
-// Expected form-data: 
+// Expected form-data:
 //   - audio (file) - the audio file
 //   - title (text) - audio title
 //   - category (text) - audio category
@@ -20,11 +20,11 @@ router.post("/upload", uploadFields, uploadAudio);
 // GET /api/audio - Get all audio files
 router.get("/", getAllAudio);
 
-// GET /api/audio/:id - Get audio by ID
-router.get("/:id", getAudioById);
-
 // GET /api/audio/category/:category - Get audio by category
 router.get("/category/:category", getAudioByCategory);
+
+// GET /api/audio/:id - Get audio by ID
+router.get("/:id", getAudioById);
 
 // Error handling for multer
 router.use((err, req, res, next) => {

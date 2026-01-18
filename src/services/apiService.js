@@ -45,38 +45,30 @@ const apiService = {
    * @returns {Promise<Array>} Array of audio objects in category
    */
   fetchAudioByCategory: async (category) => {
-    const normalizeCategory = (raw) => {
-      if (!raw) return null;
-      const s = String(raw).toLowerCase();
-      if (s.includes("funny") || s.includes("comedy") || s.includes("😂"))
-        return "funny";
-      if (
-        s.includes("sad") ||
-        s.includes("emotional") ||
-        s.includes("😭") ||
-        s.includes("😢")
-      )
-        return "emotional";
-      if (s.includes("cinematic") || s.includes("epic")) return "cinematic";
-      if (s.includes("viral") || s.includes("trending") || s.includes("🔥"))
-        return "trending";
-      if (s.includes("lo-fi") || s.includes("lofi")) return "lofi";
-      if (s.includes("jazz")) return "jazz";
-      if (s.includes("pop")) return "pop";
-      return (
-        s
-          .replace(/[\p{Emoji_Presentation}\p{Emoji}\u200d\uFE0F]/gu, "")
-          .trim() || s
-      );
-    };
-    const requestedKey = normalizeCategory(category);
     try {
-      const response = await fetch(`${API_BASE_URL}/audio`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+      if (!category || category === "All") {
+        return await apiService.fetchAllAudio();
+      }
+
+      const normalizedCategory = String(category)
+        .replace(/[\p{Emoji_Presentation}\p{Emoji}\u200d\uFE0F]/gu, "")
+        .replace(/[_/\\-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const encodedCategory = encodeURIComponent(
+        normalizedCategory || String(category).trim(),
+      );
+
+      const response = await fetch(
+        `${API_BASE_URL}/audio/category/${encodedCategory}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`API Error: ${response.status}`);
@@ -85,22 +77,7 @@ const apiService = {
       const result = await response.json();
 
       if (result.success && result.data) {
-        let audioArray = Array.isArray(result.data)
-          ? result.data
-          : [result.data];
-
-        // Filter by category if provided
-        if (category && category !== "All") {
-          //   audioArray = audioArray.filter((item) => {
-          //     console.log('item.category',item);
-          //     const itemKey = normalizeCategory(item.category || '');
-          //     if (!requestedKey) return true;
-          //     if (!itemKey) return false;
-          //     return itemKey.includes(requestedKey) || requestedKey.includes(itemKey);
-          //   });
-        }
-
-        return audioArray;
+        return Array.isArray(result.data) ? result.data : [result.data];
       }
 
       console.warn("⚠️ No audio data in response");
@@ -185,6 +162,92 @@ const apiService = {
   fetchFormattedAudioByCategory: async (category) => {
     const audioList = await apiService.fetchAudioByCategory(category);
     return audioList.map((audio) => apiService.transformAudioData(audio));
+  },
+
+  /**
+   * Fetch favorites from backend
+   * @returns {Promise<Array>} Array of favorite items
+   */
+  fetchFavorites: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/favorites`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        return Array.isArray(result.data) ? result.data : [result.data];
+      }
+
+      return [];
+    } catch (error) {
+      console.error("❌ Error fetching favorites:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Add favorite in backend
+   * @param {Object} item - Audio item
+   * @returns {Promise<Object|null>} Favorite object
+   */
+  addFavorite: async (item) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/favorites`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          audioId: item.id,
+          title: item.title,
+          category: item.category,
+          duration: item.durationSeconds || item.duration,
+          audioUrl: item.uri,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || null;
+    } catch (error) {
+      console.error("❌ Error adding favorite:", error);
+      return null;
+    }
+  },
+
+  /**
+   * Remove favorite in backend
+   * @param {string} audioId - Audio ID
+   */
+  removeFavorite: async (audioId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/favorites/${audioId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error("❌ Error removing favorite:", error);
+      return false;
+    }
   },
 };
 
