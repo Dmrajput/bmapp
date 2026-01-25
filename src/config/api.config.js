@@ -14,7 +14,7 @@
 export const getApiBaseUrl = () => {
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
   if (envUrl) {
-    return envUrl;
+    return envUrl.endsWith("/api") ? envUrl : `${envUrl}/api`;
   }
 };
 
