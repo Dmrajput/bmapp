@@ -5,6 +5,7 @@ This is an [Expo](https://expo.dev) project for a music streaming application wi
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js installed
 - Backend server running on `localhost:5000`
 
@@ -35,19 +36,24 @@ npm start
 ✅ **Mini-Player** - Convenient controls at the bottom  
 ✅ **Error Handling** - Graceful fallback if backend is unavailable  
 ✅ **Responsive Design** - Works on web, iOS, and Android  
+✅ **Auth Flow** - Welcome, Signup, Login with secure token storage  
+✅ **Favorites Sync** - Save tracks across sessions
 
 ## 📚 Documentation
 
 ### Getting Started
+
 - [QUICK_START.md](./QUICK_START.md) - Get up and running in 5 minutes
 - [FINAL_SUMMARY.md](./FINAL_SUMMARY.md) - Complete overview of the integration
 
 ### Comprehensive Guides
+
 - [API_INTEGRATION.md](./API_INTEGRATION.md) - Full integration reference
 - [CODE_EXAMPLES.md](./CODE_EXAMPLES.md) - Copy-paste code examples
 - [ARCHITECTURE_DIAGRAMS.md](./ARCHITECTURE_DIAGRAMS.md) - Visual system design
 
 ### Verification & Support
+
 - [INTEGRATION_CHECKLIST.md](./INTEGRATION_CHECKLIST.md) - Verify everything works
 - [VISUAL_SUMMARY.md](./VISUAL_SUMMARY.md) - Visual overview
 - [DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md) - Navigation guide
@@ -101,17 +107,23 @@ BMApp/
 - `GET /api/audio` - Fetch all tracks
 - `GET /api/audio?category=General` - Fetch by category
 - `GET /api/audio/:id` - Fetch single track
+- `POST /api/auth/register` - Create account
+- `POST /api/auth/login` - Login
+- `POST /api/auth/google` - Google auth (stub)
+- `POST /api/auth/refresh` - Refresh token
 
 ## 🧪 Testing
 
 ### Verify Integration
 
 1. **Check backend is running:**
+
    ```bash
    curl http://localhost:5000/api/audio
    ```
 
 2. **Start the app:**
+
    ```bash
    npm start
    ```
@@ -123,15 +135,18 @@ BMApp/
 ## 🐛 Troubleshooting
 
 ### "No tracks found"
+
 - Ensure backend is running: `npm start` in backend folder
 - Check database has audio records
 
 ### Tracks don't load
+
 - Open browser console (F12)
 - Look for error messages
 - Verify API response at `http://localhost:5000/api/audio`
 
 ### Audio won't play
+
 - Verify `audioUrl` is valid S3 URL
 - Check S3 bucket permissions
 
@@ -158,11 +173,13 @@ See [QUICK_START.md](./QUICK_START.md) → Configuration section
 ## 📝 Recent Changes (January 15, 2026)
 
 ### Implementation
+
 - ✅ Created `src/services/apiService.js` - Complete API service
 - ✅ Updated `src/screens/MusicListScreen.js` - API integration
 - ✅ Updated `src/data/musicList.js` - Fallback data
 
 ### Documentation
+
 - ✅ Created comprehensive guides (2,050+ lines)
 - ✅ Added 50+ code examples
 - ✅ Created architecture diagrams

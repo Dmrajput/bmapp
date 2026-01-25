@@ -48,45 +48,66 @@ backend/
 ### Installation
 
 1. **Navigate to backend folder**
+
    ```bash
    cd backend
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Setup environment variables**
+
    ```bash
    # Copy .env.example to .env
    cp .env.example .env
-   
+
    # Edit .env and add your MongoDB URI
    ```
 
 4. **Configure .env file**
+
    ```env
    PORT=5000
    NODE_ENV=development
    MONGODB_URI=mongodb://localhost:27017/music-app
+   JWT_SECRET=change_me_access
+   JWT_REFRESH_SECRET=change_me_refresh
+   JWT_EXPIRES_IN=15m
+   JWT_REFRESH_EXPIRES_IN=7d
    ```
+
+# AWS S3 (required for /api/audio/upload)
+
+AWS_ACCESS_KEY=your_access_key
+AWS_SECRET_KEY=your_secret_key
+AWS_REGION=ap-south-1
+AWS_BUCKET_NAME=your_bucket_name
+CDN_URL=
+
+````
 
 5. **Start MongoDB** (if running locally)
-   ```bash
-   mongod
-   ```
+
+```bash
+mongod
+````
 
 6. **Seed sample data** (optional)
+
    ```bash
    npm run seed
    ```
 
 7. **Start the server**
+
    ```bash
    # Development (with auto-reload)
    npm run dev
-   
+
    # Production
    npm start
    ```
@@ -99,9 +120,17 @@ backend/
 ## 📡 API Endpoints
 
 ### Base URL
+
 ```
 http://localhost:5000/api/music
 ```
+
+### Auth Endpoints
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/google`
+- `POST /api/auth/refresh`
 
 ---
 
@@ -110,6 +139,7 @@ http://localhost:5000/api/music
 **Endpoint:** `POST /api/music`
 
 **Request Body:**
+
 ```json
 {
   "title": "Epic Rise",
@@ -122,6 +152,7 @@ http://localhost:5000/api/music
 ```
 
 **Response:** (201 Created)
+
 ```json
 {
   "success": true,
@@ -148,6 +179,7 @@ http://localhost:5000/api/music
 **Endpoint:** `GET /api/music`
 
 **Response:** (200 OK)
+
 ```json
 {
   "success": true,
@@ -178,6 +210,7 @@ http://localhost:5000/api/music
 **Example:** `GET /api/music/category/Cinematic`
 
 **Response:** (200 OK)
+
 ```json
 {
   "success": true,
@@ -207,11 +240,13 @@ http://localhost:5000/api/music
 **Endpoint:** `GET /api/music/trending`
 
 **Query Parameters:**
+
 - `limit` (optional, default: 20)
 
 **Example:** `GET /api/music/trending?limit=10`
 
 **Response:** (200 OK)
+
 ```json
 {
   "success": true,
@@ -238,6 +273,7 @@ http://localhost:5000/api/music
 **Example:** `PATCH /api/music/6789abcd1234567890efgh12/like`
 
 **Response:** (200 OK)
+
 ```json
 {
   "success": true,
@@ -260,6 +296,7 @@ http://localhost:5000/api/music
 **Example:** `DELETE /api/music/6789abcd1234567890efgh12`
 
 **Response:** (200 OK)
+
 ```json
 {
   "success": true,
@@ -276,6 +313,7 @@ http://localhost:5000/api/music
 ## 🔧 Error Responses
 
 ### 400 Bad Request
+
 ```json
 {
   "success": false,
@@ -284,6 +322,7 @@ http://localhost:5000/api/music
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "success": false,
@@ -292,6 +331,7 @@ http://localhost:5000/api/music
 ```
 
 ### 500 Server Error
+
 ```json
 {
   "success": false,
@@ -305,6 +345,7 @@ http://localhost:5000/api/music
 ## 🧪 Testing with cURL
 
 ### Add Music
+
 ```bash
 curl -X POST http://localhost:5000/api/music \
   -H "Content-Type: application/json" \
@@ -318,26 +359,31 @@ curl -X POST http://localhost:5000/api/music \
 ```
 
 ### Get All Music
+
 ```bash
 curl http://localhost:5000/api/music
 ```
 
 ### Get by Category
+
 ```bash
 curl http://localhost:5000/api/music/category/Cinematic
 ```
 
 ### Get Trending
+
 ```bash
 curl http://localhost:5000/api/music/trending?limit=5
 ```
 
 ### Like Music
+
 ```bash
 curl -X PATCH http://localhost:5000/api/music/YOUR_MUSIC_ID/like
 ```
 
 ### Delete Music
+
 ```bash
 curl -X DELETE http://localhost:5000/api/music/YOUR_MUSIC_ID
 ```
@@ -347,6 +393,7 @@ curl -X DELETE http://localhost:5000/api/music/YOUR_MUSIC_ID
 ## 📊 Database Schema
 
 ### Music Model
+
 ```javascript
 {
   title: String (required, max 100 chars),
@@ -366,6 +413,7 @@ curl -X DELETE http://localhost:5000/api/music/YOUR_MUSIC_ID
 ## 🎯 Sample Categories
 
 The API supports these categories (matching your frontend):
+
 - Funny / Comedy
 - Emotional / Sad
 - Cinematic / Epic
@@ -409,7 +457,7 @@ npm run seed
 In your React Native app:
 
 ```javascript
-const API_BASE_URL = 'http://localhost:5000/api/music';
+const API_BASE_URL = "http://localhost:5000/api/music";
 
 // Get music by category
 const getMusicByCategory = async (category) => {
@@ -421,7 +469,7 @@ const getMusicByCategory = async (category) => {
 // Like a track
 const likeTrack = async (musicId) => {
   await fetch(`${API_BASE_URL}/${musicId}/like`, {
-    method: 'PATCH'
+    method: "PATCH",
   });
 };
 ```
@@ -440,11 +488,13 @@ const likeTrack = async (musicId) => {
 ## 🐛 Troubleshooting
 
 **MongoDB Connection Failed?**
+
 - Check if MongoDB is running: `mongod`
 - Verify MONGODB_URI in .env file
 - For Atlas, ensure IP is whitelisted
 
 **Port Already in Use?**
+
 - Change PORT in .env file
 - Kill process using port 5000
 

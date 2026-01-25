@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import audioRoutes from "./routes/audio.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 import favoritesRoutes from "./routes/favorites.routes.js";
 import musicRoutes from "./routes/music.routes.js";
 import testRoutes from "./routes/test.routes.js";
@@ -11,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api", testRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/music", musicRoutes);
 app.use("/api/audio", audioRoutes);
 app.use("/api/favorites", favoritesRoutes);

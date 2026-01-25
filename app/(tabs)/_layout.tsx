@@ -61,13 +61,41 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="explore"
+        name="all-music"
         options={{
-          title: "Explore",
+          title: "All Music",
           tabBarIcon: ({ color, focused }) => (
             <IconSymbol
               size={focused ? 26 : 24}
-              name="sparkles"
+              name="music.note.list"
+              color={color}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: "Admin",
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol
+              size={focused ? 26 : 24}
+              name="square.and.arrow.up"
+              color={color}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol
+              size={focused ? 26 : 24}
+              name="person.fill"
               color={color}
             />
           ),

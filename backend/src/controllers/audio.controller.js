@@ -46,43 +46,65 @@ import Audio from "../models/Audio.js";
 
 export const uploadAudio = async (req, res) => {
   try {
-    // 1️⃣ Validate file
-    if (!req.files?.audio?.[0]) {
+    const audioFile = req.files?.audio?.[0];
+    const licenseFile = req.files?.license_txt?.[0];
+
+    if (!audioFile) {
       return res.status(400).json({
         success: false,
         error: "Audio file is required (field name: audio)",
       });
     }
 
-    const file = req.files.audio[0];
+    if (!licenseFile) {
+      return res.status(400).json({
+        success: false,
+        error: "License text file is required (field name: license_txt)",
+      });
+    }
 
-    // 2️⃣ Text fields (IMPORTANT FIX)
     const title = req.body.title || "Untitled";
     const category = req.body.category || "General";
-    const duration = parseInt(req.body.duration) || 0;
+    const duration = parseInt(req.body.duration, 10) || 0;
 
-    // 3️⃣ Upload to S3
-    const s3Params = {
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: `audio/${Date.now()}-${file.originalname}`,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    };
+    const audioUpload = await s3
+      .upload({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: `audio/${Date.now()}-${audioFile.originalname}`,
+        Body: audioFile.buffer,
+        ContentType: audioFile.mimetype,
+      })
+      .promise();
 
-    const uploadResult = await s3.upload(s3Params).promise();
+    const licenseUpload = await s3
+      .upload({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: `licenses/${Date.now()}-${licenseFile.originalname}`,
+        Body: licenseFile.buffer,
+        ContentType: licenseFile.mimetype || "text/plain",
+      })
+      .promise();
 
-    // 4️⃣ Save to MongoDB (REAL URL)
     const audio = await Audio.create({
       title,
       category,
       duration,
-      audioUrl: uploadResult.Location, // ✅ HTTPS URL
+      audioUrl: audioUpload.Location,
+      source: "ai_generated",
+      license_type: "Envato MusicGen – Commercial License",
+      license_url: licenseUpload.Location,
+      original_audio_url: req.body.original_audio_url,
+      artist_name: req.body.artist_name || "Envato MusicGen AI",
+      attribution_required: false,
+      is_redistribution_allowed: false,
+      usage_notes:
+        "Licensed via Envato MusicGen. Allowed for commercial use inside this app as part of an end product. Redistribution outside the app is not permitted.",
     });
 
     return res.status(201).json({
       success: true,
       message: "Audio uploaded successfully",
-      data: audio,
+      audio,
     });
   } catch (err) {
     console.error("Upload error:", err);

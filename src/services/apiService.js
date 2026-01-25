@@ -249,6 +249,107 @@ const apiService = {
       return false;
     }
   },
+
+  /**
+   * Register user
+   */
+  register: async ({ name, email, password }) => {
+    try {
+      console.log("Registering user:", email);
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Registration failed");
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error("❌ Error registering:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Login user
+   */
+  login: async ({ email, password }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Login failed");
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error("❌ Error logging in:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Google auth (stubbed)
+   */
+  googleAuth: async ({ name, email }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/google`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Google auth failed");
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error("❌ Error with Google auth:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Refresh access token
+   */
+  refreshToken: async ({ refreshToken }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Refresh failed");
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error("❌ Error refreshing token:", error);
+      throw error;
+    }
+  },
 };
 
 export default apiService;

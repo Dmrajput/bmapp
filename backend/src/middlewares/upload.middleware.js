@@ -10,9 +10,10 @@ const uploadConfig = multer({
 // Export fields-based upload to handle both file and text fields
 export const uploadFields = uploadConfig.fields([
   { name: "audio", maxCount: 1 },
+  { name: "license_txt", maxCount: 1 },
   { name: "title", maxCount: 1 },
   { name: "category", maxCount: 1 },
-  { name: "duration", maxCount: 1 }
+  { name: "duration", maxCount: 1 },
 ]);
 
 export default uploadConfig;

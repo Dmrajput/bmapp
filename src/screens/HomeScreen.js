@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
    CATEGORY SECTIONS
 ======================= */
 
-const CATEGORY_SECTIONS = [
+export const CATEGORY_SECTIONS = [
   {
     title: "Mood & Feelings",
     data: [
@@ -198,9 +198,9 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Discover Music</Text>
+        <Text style={styles.headerTitle}>Discover Music 🎧</Text>
         <Text style={styles.headerSubtitle}>
-          Find the perfect sound for your video
+          Perfect background music for Reels & Shorts
         </Text>
       </View>
 
@@ -258,54 +258,60 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#F9FAFB", // light background
   },
+
   /* Header */
   header: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 10,
+    paddingTop: 20,
+    paddingBottom: 12,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#fff",
+    color: "#111827",
   },
   headerSubtitle: {
-    marginTop: 4,
+    marginTop: 6,
     fontSize: 14,
-    color: "#9CA3AF",
+    color: "#6B7280",
   },
 
   /* Scroll */
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 32,
+    paddingBottom: 40,
   },
 
   /* Search */
   searchContainer: {
-    marginVertical: 20,
+    marginVertical: 18,
   },
   searchInput: {
-    backgroundColor: "#111827",
-    borderRadius: 30,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
     paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     fontSize: 15,
-    color: "#fff",
+    color: "#111827",
     borderWidth: 1,
-    borderColor: "#1F2937",
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
 
   /* Section */
   section: {
-    marginBottom: 32,
+    marginBottom: 30,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#fff",
+    color: "#111827",
     marginBottom: 14,
   },
 
@@ -319,24 +325,26 @@ const styles = StyleSheet.create({
   /* Cards */
   categoryCard: {
     width: "48%",
-    marginBottom: 16,
-    borderRadius: 16,
+    marginBottom: 18,
+    borderRadius: 18,
     overflow: "hidden",
-    backgroundColor: "#0F172A",
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   gradientBox: {
-    height: 140,
-    padding: 14,
+    height: 130,
+    padding: 16,
     justifyContent: "flex-end",
-    borderRadius: 16,
+    borderRadius: 18,
   },
   categoryName: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#fff",
+    color: "#111827",
     lineHeight: 20,
-    textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
 });
