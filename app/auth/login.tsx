@@ -3,21 +3,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth() as any;
   const params = useLocalSearchParams();
   const provider = String(params?.provider || "");
 
@@ -41,15 +41,16 @@ export default function LoginScreen() {
       return;
     }
 
-    try {
-      setLoading(true);
-      await signIn({ email, password, remember });
-      router.replace("/(tabs)");
-    } catch (err) {
-      setError(err.message || "Login failed");
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const result = await signIn({ email, password, remember });
+    setLoading(false);
+
+    if (!result?.ok) {
+      setError(result?.message || "Login failed. Please try again.");
+      return;
     }
+
+    router.replace("/(tabs)");
   };
 
   const handleGoogle = async () => {
@@ -59,15 +60,16 @@ export default function LoginScreen() {
       return;
     }
 
-    try {
-      setLoading(true);
-      await signInWithGoogle({ name, email });
-      router.replace("/(tabs)");
-    } catch (err) {
-      setError(err.message || "Google auth failed");
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const result = await signInWithGoogle({ name, email });
+    setLoading(false);
+
+    if (!result?.ok) {
+      setError(result?.message || "Google auth failed. Please try again.");
+      return;
     }
+
+    router.replace("/(tabs)");
   };
 
   return (

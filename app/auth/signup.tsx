@@ -59,15 +59,16 @@ export default function SignupScreen() {
       return;
     }
 
-    try {
-      setLoading(true);
-      await signUp({ name, email, password });
-      router.replace("/(tabs)");
-    } catch (err) {
-      setError(err.message || "Signup failed");
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const result = await signUp({ name, email, password });
+    setLoading(false);
+
+    if (!result?.ok) {
+      setError(result?.message || "Signup failed. Please try again.");
+      return;
     }
+
+    router.replace("/(tabs)");
   };
 
   return (

@@ -31,7 +31,7 @@ export default function WelcomeScreen() {
           <Text style={styles.primaryText}>Continue with Email</Text>
         </Pressable>
 
-        <Pressable
+        {/* <Pressable
           style={({ pressed }) => [
             styles.secondaryBtn,
             pressed && styles.secondaryBtnPressed,
@@ -39,7 +39,7 @@ export default function WelcomeScreen() {
           onPress={() => router.push("/auth/login?provider=google")}
         >
           <Text style={styles.secondaryText}>Continue with Google</Text>
-        </Pressable>
+        </Pressable> */}
 
         <Pressable
           onPress={() => router.replace("/(tabs)")}

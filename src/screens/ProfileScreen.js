@@ -6,13 +6,13 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
-  const { user, accessToken, isLoading, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && !accessToken) {
+    if (!isLoading && !user) {
       router.replace("/auth/welcome");
     }
-  }, [accessToken, isLoading]);
+  }, [user, isLoading]);
 
   const initials = useMemo(() => {
     if (!user?.name) return "BM";

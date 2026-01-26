@@ -1,5 +1,5 @@
 import apiService from "@/src/services/apiService";
-import * as SecureStore from "expo-secure-store";
+import SessionManager from "@/src/utils/SessionManager";
 import React, {
     createContext,
     useCallback,
@@ -9,44 +9,33 @@ import React, {
     useState,
 } from "react";
 
-const AUTH_KEY = "bmapp_auth";
-
 const AuthContext = createContext({
   user: null,
-  accessToken: null,
-  refreshToken: null,
   isLoading: true,
-  signIn: async () => {},
-  signUp: async () => {},
-  signOut: async () => {},
-  logout: async () => {},
-  signInWithGoogle: async () => {},
-  refreshSession: async () => {},
+  // All auth methods return a consistent, UI-friendly shape and never throw
+  signIn: async (_payload) => ({ ok: false, message: "Auth not ready" }),
+  signUp: async (_payload) => ({ ok: false, message: "Auth not ready" }),
+  signOut: async () => ({ ok: true }),
+  logout: async () => ({ ok: true }),
+  signInWithGoogle: async (_payload) => ({
+    ok: false,
+    message: "Auth not ready",
+  }),
+  isLoggedIn: false,
 });
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [accessToken, setAccessToken] = useState(null);
-  const [refreshToken, setRefreshToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const persistSession = useCallback(async (payload) => {
-    await SecureStore.setItemAsync(AUTH_KEY, JSON.stringify(payload));
-  }, []);
-
-  const clearSession = useCallback(async () => {
-    await SecureStore.deleteItemAsync(AUTH_KEY);
-  }, []);
 
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const raw = await SecureStore.getItemAsync(AUTH_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          setUser(parsed.user || null);
-          setAccessToken(parsed.accessToken || null);
-          setRefreshToken(parsed.refreshToken || null);
+        const session = await SessionManager.getSession();
+        if (session?.isLoggedIn && session.user) {
+          setUser(session.user);
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.log("❌ Failed to load auth session:", error);
@@ -60,98 +49,99 @@ export function AuthProvider({ children }) {
 
   const signUp = useCallback(
     async ({ name, email, password }) => {
-      const data = await apiService.register({ name, email, password });
-      setUser(data.user);
-      setAccessToken(data.accessToken);
-      setRefreshToken(data.refreshToken);
-      await persistSession({
-        user: data.user,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      });
+      const result = await apiService.register({ name, email, password });
+
+      if (!result?.ok || !result.user) {
+        return {
+          ok: false,
+          message: result?.message || "Unable to create account.",
+        };
+      }
+
+      setUser(result.user);
+      await SessionManager.saveSession(result.user);
+
+      return {
+        ok: true,
+        message: result.message || "Account created",
+      };
     },
-    [persistSession],
+    [],
   );
 
   const signIn = useCallback(
     async ({ email, password, remember }) => {
-      const data = await apiService.login({ email, password });
-      setUser(data.user);
-      setAccessToken(data.accessToken);
-      setRefreshToken(data.refreshToken);
+      const result = await apiService.login({ email, password });
+
+      if (!result?.ok || !result.user) {
+        return {
+          ok: false,
+          message: result?.message || "Invalid email or password.",
+        };
+      }
+
+      setUser(result.user);
 
       if (remember) {
-        await persistSession({
-          user: data.user,
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-        });
+        await SessionManager.saveSession(result.user);
       } else {
-        await clearSession();
+        await SessionManager.clearSession();
       }
+
+      return {
+        ok: true,
+        message: result.message || "Login successful",
+      };
     },
-    [persistSession, clearSession],
+    [],
   );
 
   const signInWithGoogle = useCallback(
     async ({ name, email }) => {
-      const data = await apiService.googleAuth({ name, email });
-      setUser(data.user);
-      setAccessToken(data.accessToken);
-      setRefreshToken(data.refreshToken);
-      await persistSession({
-        user: data.user,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      });
-    },
-    [persistSession],
-  );
+      const result = await apiService.googleAuth({ name, email });
 
-  const refreshSession = useCallback(async () => {
-    if (!refreshToken) return null;
-    const data = await apiService.refreshToken({ refreshToken });
-    if (data?.accessToken) {
-      setAccessToken(data.accessToken);
-      await persistSession({
-        user,
-        accessToken: data.accessToken,
-        refreshToken,
-      });
-    }
-    return data?.accessToken || null;
-  }, [persistSession, refreshToken, user]);
+      if (!result?.ok || !result.user) {
+        return {
+          ok: false,
+          message: result?.message || "Unable to sign in with Google.",
+        };
+      }
+
+      setUser(result.user);
+      await SessionManager.saveSession(result.user);
+
+      return {
+        ok: true,
+        message: result.message || "Google auth successful",
+      };
+    },
+    [],
+  );
 
   const signOut = useCallback(async () => {
     setUser(null);
-    setAccessToken(null);
-    setRefreshToken(null);
-    await clearSession();
-  }, [clearSession]);
+    await SessionManager.clearSession();
+    return { ok: true };
+  }, []);
 
   const value = useMemo(
     () => ({
       user,
-      accessToken,
-      refreshToken,
       isLoading,
       signIn,
       signUp,
       signOut,
       logout: signOut,
       signInWithGoogle,
-      refreshSession,
+      isLoggedIn: !!user,
     }),
     [
       user,
-      accessToken,
-      refreshToken,
       isLoading,
       signIn,
       signUp,
       signOut,
       signInWithGoogle,
-      refreshSession,
     ],
   );
 

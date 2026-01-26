@@ -17,17 +17,17 @@ export const unstable_settings = {
 };
 
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { accessToken, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   React.useEffect(() => {
     if (isLoading) return;
     const inAuth = segments[0] === "auth";
-    if (accessToken && inAuth) {
+    if (user && inAuth) {
       router.replace("/(tabs)");
     }
-  }, [accessToken, isLoading, segments, router]);
+  }, [user, isLoading, segments, router]);
 
   return <>{children}</>;
 }

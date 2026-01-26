@@ -21,7 +21,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.divyaraj_padhiyar.BMApp",
-      "permissions": ["READ_MEDIA_AUDIO"]
+      "permissions": ["INTERNET", "READ_MEDIA_AUDIO"]
     },
     "web": {
       "output": "static",
@@ -53,6 +53,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7604842e-650e-4ac0-8a83-cde4fc533ed9"
+      },
+      "API_URL": "https://bmapp-ypzi.onrender.com"
     }
   }
 }

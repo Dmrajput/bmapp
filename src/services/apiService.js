@@ -255,7 +255,6 @@ const apiService = {
    */
   register: async ({ name, email, password }) => {
     try {
-      console.log("Registering user:", email);
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: {
@@ -265,14 +264,24 @@ const apiService = {
       });
 
       const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || "Registration failed");
+
+      if (!response.ok || !result.success) {
+        const message =
+          result?.error || result?.message || "Unable to create account";
+        return { ok: false, message };
       }
 
-      return result.data;
+      return {
+        ok: true,
+        user: result.data?.user || null,
+        message: result.message || "Account created",
+      };
     } catch (error) {
       console.error("❌ Error registering:", error);
-      throw error;
+      return {
+        ok: false,
+        message: "Unable to reach server. Please try again.",
+      };
     }
   },
 
@@ -290,14 +299,24 @@ const apiService = {
       });
 
       const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || "Login failed");
+
+      if (!response.ok || !result.success) {
+        const message =
+          result?.error || result?.message || "Invalid email or password.";
+        return { ok: false, message };
       }
 
-      return result.data;
+      return {
+        ok: true,
+        user: result.data?.user || null,
+        message: result.message || "Login successful",
+      };
     } catch (error) {
       console.error("❌ Error logging in:", error);
-      throw error;
+      return {
+        ok: false,
+        message: "Unable to reach server. Please try again.",
+      };
     }
   },
 
@@ -315,39 +334,24 @@ const apiService = {
       });
 
       const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || "Google auth failed");
+
+      if (!response.ok || !result.success) {
+        const message =
+          result?.error || result?.message || "Unable to sign in with Google.";
+        return { ok: false, message };
       }
 
-      return result.data;
+      return {
+        ok: true,
+        user: result.data?.user || null,
+        message: result.message || "Google auth successful",
+      };
     } catch (error) {
       console.error("❌ Error with Google auth:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Refresh access token
-   */
-  refreshToken: async ({ refreshToken }) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || "Refresh failed");
-      }
-
-      return result.data;
-    } catch (error) {
-      console.error("❌ Error refreshing token:", error);
-      throw error;
+      return {
+        ok: false,
+        message: "Unable to reach server. Please try again.",
+      };
     }
   },
 };
