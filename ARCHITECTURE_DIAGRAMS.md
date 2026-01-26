@@ -280,6 +280,7 @@ Component State
 ## 7. API Response Format Examples
 
 ### Success Response
+
 ```
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -310,6 +311,7 @@ Content-Type: application/json
 ```
 
 ### Empty Response
+
 ```
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -321,6 +323,7 @@ Content-Type: application/json
 ```
 
 ### Error Response
+
 ```
 HTTP/1.1 500 Internal Server Error
 Content-Type: application/json
@@ -356,7 +359,7 @@ Category Change
 ## 9. File Structure Overview
 
 ```
-BMApp/
+ReelSound/
 ├── src/
 │   ├── screens/
 │   │   ├── MusicListScreen.js ◄─── Fetches & displays data

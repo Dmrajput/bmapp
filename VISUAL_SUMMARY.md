@@ -208,7 +208,7 @@ TOTAL TIME:              ~250ms (< 1 second ✓)
 ## File Organization 📁
 
 ```
-BMApp/
+ReelSound/
 │
 ├── src/
 │   ├── services/

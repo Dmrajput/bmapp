@@ -1,16 +1,16 @@
-import apiService from "@/src/services/apiService";
 import { useAuth } from "@/context/auth-context";
+import apiService from "@/src/services/apiService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 
-const FAVORITES_KEY = "bmapp:favorites";
+const FAVORITES_KEY = "reelsound:favorites";
 
 const FavoritesContext = createContext({
   favorites: [],
