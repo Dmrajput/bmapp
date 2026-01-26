@@ -2,6 +2,7 @@ import { useFavorites } from "@/context/favorites-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Audio } from "expo-av";
+import Constants from "expo-constants";
 import { Directory, File, Paths } from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import React, { useCallback, useRef, useState } from "react";
@@ -131,7 +132,31 @@ export default function AllMusicScreen() {
     setDownloadStates((prev) => ({ ...prev, [item.id]: "downloading" }));
 
     try {
-      const permission = await MediaLibrary.requestPermissionsAsync();
+      // Check if we're in Expo Go (which has limited media library support)
+      const isExpoGo = Constants.executionEnvironment === "storeClient";
+
+      let permission;
+      try {
+        permission = await MediaLibrary.requestPermissionsAsync();
+      } catch (permError) {
+        // Catch permission request errors (common in Expo Go)
+        const errorMsg = String(permError?.message || "");
+        if (
+          errorMsg.includes("requestPermissionsAsync") ||
+          errorMsg.includes("not declared in AndroidManifest") ||
+          errorMsg.includes("has been rejected")
+        ) {
+          setErrorMessage(
+            isExpoGo
+              ? "Download feature requires a development build. Expo Go has limited media library access. Please build the app with 'npx expo run:android' to enable downloads."
+              : "Media permissions are not configured. Please rebuild the app after updating app.json permissions.",
+          );
+          setDownloadStates((prev) => ({ ...prev, [item.id]: "error" }));
+          return;
+        }
+        throw permError; // Re-throw if it's a different error
+      }
+
       if (!permission.granted) {
         setErrorMessage("Storage permission is required to save downloads.");
         setDownloadStates((prev) => ({ ...prev, [item.id]: "error" }));
@@ -149,15 +174,26 @@ export default function AllMusicScreen() {
       await MediaLibrary.createAlbumAsync("Download", asset, false);
       setDownloadStates((prev) => ({ ...prev, [item.id]: "downloaded" }));
     } catch (error) {
-      console.log("❌ Download error:", error);
-      const msg = String(error?.message || "");
+      // Only log non-permission errors to avoid console spam
+      const errorMsg = String(error?.message || "");
       if (
-        msg.includes("requestPermissionsAsync") &&
-        (msg.includes("not declared in AndroidManifest") ||
-          msg.includes("has been rejected"))
+        !errorMsg.includes("requestPermissionsAsync") &&
+        !errorMsg.includes("not declared in AndroidManifest") &&
+        !errorMsg.includes("has been rejected")
       ) {
+        console.log("❌ Download error:", error);
+      }
+
+      if (
+        errorMsg.includes("requestPermissionsAsync") ||
+        errorMsg.includes("not declared in AndroidManifest") ||
+        errorMsg.includes("has been rejected")
+      ) {
+        const isExpoGo = Constants.executionEnvironment === "storeClient";
         setErrorMessage(
-          "Downloads need media permissions. Expo Go can’t fully test this—please use a development build or rebuild the app after updating permissions.",
+          isExpoGo
+            ? "Download feature requires a development build. Expo Go has limited media library access. Please build the app with 'npx expo run:android' to enable downloads."
+            : "Media permissions are not configured. Please rebuild the app after updating app.json permissions.",
         );
       } else {
         setErrorMessage("Unable to download right now. Please try again.");
