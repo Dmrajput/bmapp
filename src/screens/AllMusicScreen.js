@@ -6,12 +6,12 @@ import { Directory, File, Paths } from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import React, { useCallback, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import apiService from "../services/apiService";
@@ -150,6 +150,18 @@ export default function AllMusicScreen() {
       setDownloadStates((prev) => ({ ...prev, [item.id]: "downloaded" }));
     } catch (error) {
       console.log("❌ Download error:", error);
+      const msg = String(error?.message || "");
+      if (
+        msg.includes("requestPermissionsAsync") &&
+        (msg.includes("not declared in AndroidManifest") ||
+          msg.includes("has been rejected"))
+      ) {
+        setErrorMessage(
+          "Downloads need media permissions. Expo Go can’t fully test this—please use a development build or rebuild the app after updating permissions.",
+        );
+      } else {
+        setErrorMessage("Unable to download right now. Please try again.");
+      }
       setDownloadStates((prev) => ({ ...prev, [item.id]: "error" }));
     }
   };
