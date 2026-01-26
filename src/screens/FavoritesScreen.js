@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function FavoritesScreen() {
   const { favorites, removeFavorite } = useFavorites();
-  const { accessToken } = useAuth();
+  const { user } = useAuth();
 
   const [currentTrackId, setCurrentTrackId] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -146,7 +146,7 @@ export default function FavoritesScreen() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>Favorites</Text>
 
-      {!accessToken ? (
+      {!user ? (
         <View style={styles.empty}>
           <Ionicons name="lock-closed-outline" size={36} color="#9ca3af" />
           <Text style={styles.emptyTitle}>Login required</Text>
