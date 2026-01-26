@@ -1,4 +1,5 @@
 import apiService from "@/src/services/apiService";
+import { useAuth } from "@/context/auth-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
     createContext,
@@ -20,6 +21,7 @@ const FavoritesContext = createContext({
 });
 
 export function FavoritesProvider({ children }) {
+  const { user } = useAuth();
   const [favorites, setFavorites] = useState([]);
   const [isReady, setIsReady] = useState(false);
 
@@ -38,6 +40,13 @@ export function FavoritesProvider({ children }) {
   useEffect(() => {
     const loadFavorites = async () => {
       try {
+        // Only load favorites if user is logged in
+        if (!user?.id) {
+          setFavorites([]);
+          setIsReady(true);
+          return;
+        }
+
         const raw = await AsyncStorage.getItem(FAVORITES_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
@@ -46,7 +55,8 @@ export function FavoritesProvider({ children }) {
           }
         }
 
-        const remote = await apiService.fetchFavorites();
+        // Fetch user-specific favorites from backend
+        const remote = await apiService.fetchFavorites(user.id);
         if (Array.isArray(remote) && remote.length > 0) {
           const normalized = remote
             .map((item) => normalizeFavorite(item))
@@ -61,7 +71,7 @@ export function FavoritesProvider({ children }) {
     };
 
     loadFavorites();
-  }, []);
+  }, [user?.id, normalizeFavorite]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -76,35 +86,62 @@ export function FavoritesProvider({ children }) {
     persist();
   }, [favorites, isReady]);
 
+  // Clear favorites when user logs out
+  useEffect(() => {
+    if (!user?.id) {
+      setFavorites([]);
+    }
+  }, [user?.id]);
+
   const isFavorite = useCallback(
     (id) => favorites.some((item) => item.id === id),
     [favorites],
   );
 
-  const addFavorite = useCallback(async (item) => {
-    if (!item?.id) return;
-    setFavorites((prev) => {
-      if (prev.some((existing) => existing.id === item.id)) return prev;
-      return [item, ...prev];
-    });
-    await apiService.addFavorite(item);
-  }, []);
+  const addFavorite = useCallback(
+    async (item) => {
+      if (!item?.id) return;
+      if (!user?.id) {
+        console.warn("⚠️ Cannot add favorite: user not logged in");
+        return;
+      }
 
-  const removeFavorite = useCallback(async (id) => {
-    setFavorites((prev) => prev.filter((item) => item.id !== id));
-    await apiService.removeFavorite(id);
-  }, []);
+      setFavorites((prev) => {
+        if (prev.some((existing) => existing.id === item.id)) return prev;
+        return [item, ...prev];
+      });
+      await apiService.addFavorite(item, user.id);
+    },
+    [user?.id],
+  );
+
+  const removeFavorite = useCallback(
+    async (id) => {
+      if (!user?.id) {
+        console.warn("⚠️ Cannot remove favorite: user not logged in");
+        return;
+      }
+
+      setFavorites((prev) => prev.filter((item) => item.id !== id));
+      await apiService.removeFavorite(id, user.id);
+    },
+    [user?.id],
+  );
 
   const toggleFavorite = useCallback(
     (item) => {
       if (!item?.id) return;
+      if (!user?.id) {
+        console.warn("⚠️ Cannot toggle favorite: user not logged in");
+        return;
+      }
       if (isFavorite(item.id)) {
         removeFavorite(item.id);
       } else {
         addFavorite(item);
       }
     },
-    [addFavorite, isFavorite, removeFavorite],
+    [addFavorite, isFavorite, removeFavorite, user?.id],
   );
 
   const value = useMemo(

@@ -166,16 +166,25 @@ const apiService = {
 
   /**
    * Fetch favorites from backend
+   * @param {string} userId - User ID
    * @returns {Promise<Array>} Array of favorite items
    */
-  fetchFavorites: async () => {
+  fetchFavorites: async (userId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/favorites`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+      if (!userId) {
+        console.warn("⚠️ fetchFavorites called without userId");
+        return [];
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/favorites?userId=${encodeURIComponent(userId)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`API Error: ${response.status}`);
@@ -196,16 +205,23 @@ const apiService = {
   /**
    * Add favorite in backend
    * @param {Object} item - Audio item
+   * @param {string} userId - User ID
    * @returns {Promise<Object|null>} Favorite object
    */
-  addFavorite: async (item) => {
+  addFavorite: async (item, userId) => {
     try {
+      if (!userId) {
+        console.warn("⚠️ addFavorite called without userId");
+        return null;
+      }
+
       const response = await fetch(`${API_BASE_URL}/favorites`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          userId,
           audioId: item.id,
           title: item.title,
           category: item.category,
@@ -229,15 +245,24 @@ const apiService = {
   /**
    * Remove favorite in backend
    * @param {string} audioId - Audio ID
+   * @param {string} userId - User ID
    */
-  removeFavorite: async (audioId) => {
+  removeFavorite: async (audioId, userId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/favorites/${audioId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
+      if (!userId) {
+        console.warn("⚠️ removeFavorite called without userId");
+        return false;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/favorites/${audioId}?userId=${encodeURIComponent(userId)}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`API Error: ${response.status}`);
