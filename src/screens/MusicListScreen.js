@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -16,7 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import apiService from "../services/apiService";
 
-/* ---------------- ADS SAFE LOADING ---------------- */
+/* ---------------- ADMOB CONFIGURATION ---------------- */
 const isExpoGo =
   Constants.executionEnvironment === "storeClient" ||
   (Constants.appOwnership === "expo" && !Constants.executionEnvironment);
@@ -24,6 +25,9 @@ const isExpoGo =
 let BannerAd = null;
 let BannerAdSize = null;
 let TestIds = null;
+let InterstitialAd = null;
+let RewardedAd = null;
+let mobileAds = null;
 
 if (!isExpoGo) {
   try {
@@ -31,11 +35,29 @@ if (!isExpoGo) {
     BannerAd = ads.BannerAd;
     BannerAdSize = ads.BannerAdSize;
     TestIds = ads.TestIds;
-  } catch {}
+    InterstitialAd = ads.InterstitialAd;
+    RewardedAd = ads.RewardedAd;
+    mobileAds = ads.mobileAds;
+  } catch (error) {
+    console.log("⚠️ AdMob not available:", error.message);
+  }
 }
 
-const AD_UNIT_ID =
-  __DEV__ && TestIds ? TestIds.BANNER : "ca-app-pub-xxxxxxxx/yyyyyyyy";
+// Ad Unit IDs - Replace with your actual AdMob unit IDs
+const AD_UNIT_IDS = {
+  BANNER: __DEV__ && TestIds ? TestIds.BANNER : "ca-app-pub-xxxxxxxx/yyyyyyyy",
+  INTERSTITIAL: __DEV__ && TestIds ? TestIds.INTERSTITIAL : "ca-app-pub-xxxxxxxx/zzzzzzzz",
+  REWARDED: __DEV__ && TestIds ? TestIds.REWARDED : "ca-app-pub-xxxxxxxx/wwwwwwww",
+};
+
+// Initialize AdMob (only once)
+if (mobileAds && !isExpoGo) {
+  try {
+    mobileAds().initialize();
+  } catch (error) {
+    console.log("⚠️ AdMob initialization error:", error.message);
+  }
+}
 
 /* ================================================= */
 
@@ -44,6 +66,7 @@ export default function MusicListScreen({ route }) {
 
   const [musicList, setMusicList] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [currentTrackId, setCurrentTrackId] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -54,26 +77,64 @@ export default function MusicListScreen({ route }) {
   const { toggleFavorite, isFavorite } = useFavorites();
 
   const soundRef = useRef(null);
+  const interstitialAdRef = useRef(null);
+  const playCountRef = useRef(0);
 
   /* ---------------- FETCH AUDIO ---------------- */
-  useEffect(() => {
-    const load = async () => {
+  const loadMusic = useCallback(async (showRefresh = false) => {
+    if (showRefresh) {
+      setRefreshing(true);
+    } else {
       setIsLoadingData(true);
-      try {
-        const data =
-          categoryParam === "All"
-            ? await apiService.fetchFormattedAudio()
-            : await apiService.fetchFormattedAudioByCategory(categoryParam);
+    }
 
-        setMusicList(data);
-      } catch (e) {
-        console.log("❌ Fetch error:", e);
-      } finally {
-        setIsLoadingData(false);
-      }
-    };
-    load();
+    try {
+      const data =
+        categoryParam === "All"
+          ? await apiService.fetchFormattedAudio()
+          : await apiService.fetchFormattedAudioByCategory(categoryParam);
+
+      setMusicList(data);
+    } catch (e) {
+      console.log("❌ Fetch error:", e);
+    } finally {
+      setIsLoadingData(false);
+      setRefreshing(false);
+    }
   }, [categoryParam]);
+
+  useEffect(() => {
+    loadMusic();
+  }, [loadMusic]);
+
+  /* ---------------- INTERSTITIAL AD SETUP ---------------- */
+  useEffect(() => {
+    if (InterstitialAd && !isExpoGo) {
+      try {
+        const ad = InterstitialAd.createForAdRequest(AD_UNIT_IDS.INTERSTITIAL, {
+          requestNonPersonalizedAdsOnly: true,
+        });
+        interstitialAdRef.current = ad;
+      } catch (error) {
+        console.log("⚠️ Interstitial ad setup error:", error.message);
+      }
+    }
+  }, []);
+
+  const showInterstitialAd = useCallback(() => {
+    if (interstitialAdRef.current && !isExpoGo) {
+      try {
+        playCountRef.current += 1;
+        // Show ad every 5 plays
+        if (playCountRef.current % 5 === 0) {
+          interstitialAdRef.current.load();
+          interstitialAdRef.current.show();
+        }
+      } catch (error) {
+        console.log("⚠️ Interstitial ad show error:", error.message);
+      }
+    }
+  }, []);
 
   /* ---------------- AUDIO CONTROL ---------------- */
   const unloadSound = useCallback(async () => {
@@ -123,13 +184,16 @@ export default function MusicListScreen({ route }) {
         soundRef.current = sound;
         setCurrentTrackId(item.id);
         setIsPlaying(true);
+
+        // Show interstitial ad after playing
+        showInterstitialAd();
       } catch (e) {
         console.log("❌ Audio error:", e);
       } finally {
         setIsLoadingSound(false);
       }
     },
-    [currentTrackId, isPlaying, unloadSound],
+    [currentTrackId, isPlaying, unloadSound, showInterstitialAd],
   );
 
   const formatTime = (millis) => {
@@ -158,64 +222,101 @@ export default function MusicListScreen({ route }) {
 
     return (
       <>
-        {/* Inline Ads */}
+        {/* Inline Banner Ads - Show every 5 items */}
         {BannerAd && BannerAdSize && index !== 0 && index % 5 === 0 && (
-          <View style={styles.adInline}>
-            <BannerAd unitId={AD_UNIT_ID} size={BannerAdSize.BANNER} />
+          <View style={styles.adInlineContainer}>
+            <View style={styles.adLabel}>
+              <Text style={styles.adLabelText}>Advertisement</Text>
+            </View>
+            <View style={styles.adInline}>
+              <BannerAd
+                unitId={AD_UNIT_IDS.BANNER}
+                size={BannerAdSize.BANNER}
+                requestOptions={{
+                  requestNonPersonalizedAdsOnly: true,
+                }}
+                onAdLoaded={() => console.log("✅ Banner ad loaded")}
+                onAdFailedToLoad={(error) =>
+                  console.log("❌ Banner ad failed:", error.message)
+                }
+              />
+            </View>
           </View>
         )}
 
         <View style={[styles.card, active && styles.cardActive]}>
           <View style={styles.cardLeft}>
-            <Text style={styles.title} numberOfLines={1}>
-              {item.title}
-            </Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.title} numberOfLines={1}>
+                {item.title}
+              </Text>
+              {active && (
+                <View style={styles.playingIndicator}>
+                  <View style={styles.playingDot} />
+                </View>
+              )}
+            </View>
 
             <Text style={styles.meta}>
-              {item.category} • {item.duration}s
+              {item.category} • {formatTime(durationMillis)}
             </Text>
 
-            {/* 🔒 NO COPYRIGHT INFO */}
+            {/* Badges */}
             <View style={styles.badgesRow}>
               {item.is_redistribution_allowed && (
-                <Text style={styles.badgeGreen}>Free to Use</Text>
+                <View style={styles.badgeGreen}>
+                  <Ionicons name="checkmark-circle" size={12} color="#166534" />
+                  <Text style={styles.badgeTextGreen}>Free to Use</Text>
+                </View>
               )}
               {!item.attribution_required && (
-                <Text style={styles.badgeBlue}>No Credit</Text>
+                <View style={styles.badgeBlue}>
+                  <Ionicons name="shield-checkmark" size={12} color="#3730A3" />
+                  <Text style={styles.badgeTextBlue}>No Credit</Text>
+                </View>
               )}
               {item.source === "ai_generated" && (
-                <Text style={styles.badgeGray}>AI Generated</Text>
+                <View style={styles.badgeGray}>
+                  <Ionicons name="sparkles" size={12} color="#374151" />
+                  <Text style={styles.badgeTextGray}>AI Generated</Text>
+                </View>
               )}
             </View>
 
-            <View style={styles.progressRow}>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${Math.round(progress * 100)}%` },
-                  ]}
-                />
+            {/* Progress Bar */}
+            {active && (
+              <View style={styles.progressRow}>
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${Math.round(progress * 100)}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.timeLabel}>
+                  {formatTime(positionMillis)} / {formatTime(durationMillis)}
+                </Text>
               </View>
-              <Text style={styles.timeLabel}>
-                {formatTime(positionMillis)} / {formatTime(durationMillis)}
-              </Text>
-            </View>
+            )}
           </View>
 
           <View style={styles.cardActions}>
-            <Pressable onPress={() => toggleFavorite(item)}>
+            <Pressable
+              style={styles.actionBtn}
+              onPress={() => toggleFavorite(item)}
+            >
               <Ionicons
                 name={favorite ? "heart" : "heart-outline"}
-                size={20}
+                size={22}
                 color={favorite ? "#ec4899" : "#9ca3af"}
               />
             </Pressable>
 
-            <Pressable onPress={() => openDetails(item)}>
+            <Pressable style={styles.actionBtn} onPress={() => openDetails(item)}>
               <Ionicons
                 name="information-circle-outline"
-                size={20}
+                size={22}
                 color="#64748b"
               />
             </Pressable>
@@ -225,11 +326,11 @@ export default function MusicListScreen({ route }) {
               onPress={() => playPause(item)}
             >
               {isLoadingSound && active ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Ionicons
                   name={active && isPlaying ? "pause" : "play"}
-                  size={18}
+                  size={20}
                   color="#fff"
                 />
               )}
@@ -241,22 +342,67 @@ export default function MusicListScreen({ route }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Top Banner */}
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Header with Category */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
+          {categoryParam === "All" ? "All Music" : categoryParam}
+        </Text>
+        <Text style={styles.headerSubtitle}>
+          {musicList.length} {musicList.length === 1 ? "track" : "tracks"}
+        </Text>
+      </View>
+
+      {/* Top Banner Ad */}
       {BannerAd && BannerAdSize && (
-        <View style={styles.adTop}>
-          <BannerAd unitId={AD_UNIT_ID} size={BannerAdSize.BANNER} />
+        <View style={styles.adTopContainer}>
+          <View style={styles.adLabel}>
+            <Text style={styles.adLabelText}>Advertisement</Text>
+          </View>
+          <View style={styles.adTop}>
+            <BannerAd
+              unitId={AD_UNIT_IDS.BANNER}
+              size={BannerAdSize.BANNER}
+              requestOptions={{
+                requestNonPersonalizedAdsOnly: true,
+              }}
+              onAdLoaded={() => console.log("✅ Top banner ad loaded")}
+              onAdFailedToLoad={(error) =>
+                console.log("❌ Top banner ad failed:", error.message)
+              }
+            />
+          </View>
         </View>
       )}
 
-      {isLoadingData ? (
-        <ActivityIndicator size="large" color="#6366f1" />
+      {isLoadingData && !refreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6366f1" />
+          <Text style={styles.loadingText}>Loading music...</Text>
+        </View>
+      ) : musicList.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="musical-notes-outline" size={64} color="#9ca3af" />
+          <Text style={styles.emptyTitle}>No music found</Text>
+          <Text style={styles.emptyText}>
+            Try a different category or check your connection
+          </Text>
+        </View>
       ) : (
         <FlatList
           data={musicList}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadMusic(true)}
+              tintColor="#6366f1"
+              colors={["#6366f1"]}
+            />
+          }
+          showsVerticalScrollIndicator={false}
         />
       )}
     </SafeAreaView>
@@ -265,81 +411,251 @@ export default function MusicListScreen({ route }) {
 
 /* ---------------- STYLES ---------------- */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
+  container: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+  },
 
-  adTop: { alignItems: "center", marginBottom: 8 },
-  adInline: { alignItems: "center", marginVertical: 12 },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
+  adTopContainer: {
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  adTop: {
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  adInlineContainer: {
+    marginVertical: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  adInline: {
+    alignItems: "center",
+    marginTop: 4,
+  },
+  adLabel: {
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  adLabelText: {
+    fontSize: 10,
+    color: "#9CA3AF",
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+
+  listContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
 
   card: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 16,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   cardActive: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "#6366f1",
+    shadowColor: "#6366f1",
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
   },
-  cardLeft: { flex: 1, paddingRight: 12 },
+  cardLeft: {
+    flex: 1,
+    paddingRight: 12,
+  },
 
-  title: { fontSize: 15, fontWeight: "700", color: "#111827" },
-  meta: { fontSize: 12, color: "#6B7280", marginTop: 4 },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    flex: 1,
+  },
+  playingIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#6366f1",
+  },
+  playingDot: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 4,
+    backgroundColor: "#6366f1",
+  },
+  meta: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 4,
+    fontWeight: "500",
+  },
 
-  badgesRow: { flexDirection: "row", gap: 6, marginTop: 6 },
-
+  badgesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 8,
+  },
   badgeGreen: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: "#DCFCE7",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeTextGreen: {
     color: "#166534",
-    fontSize: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
+    fontSize: 11,
     fontWeight: "600",
   },
   badgeBlue: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: "#E0E7FF",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeTextBlue: {
     color: "#3730A3",
-    fontSize: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
+    fontSize: 11,
     fontWeight: "600",
   },
   badgeGray: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: "#E5E7EB",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeTextGray: {
     color: "#374151",
-    fontSize: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
+    fontSize: 11,
     fontWeight: "600",
   },
 
-  progressRow: { marginTop: 10 },
+  progressRow: {
+    marginTop: 12,
+  },
   progressBar: {
-    height: 5,
+    height: 4,
     backgroundColor: "#E5E7EB",
-    borderRadius: 999,
+    borderRadius: 2,
     overflow: "hidden",
   },
-  progressFill: { height: "100%", backgroundColor: "#6366f1" },
-  timeLabel: { fontSize: 11, color: "#6B7280", marginTop: 6 },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#6366f1",
+    borderRadius: 2,
+  },
+  timeLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+    marginTop: 6,
+    fontWeight: "500",
+  },
 
-  cardActions: { justifyContent: "space-between", alignItems: "center" },
+  cardActions: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  },
+  actionBtn: {
+    padding: 8,
+    borderRadius: 10,
+  },
   playBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     backgroundColor: "#6366f1",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 8,
+    shadowColor: "#6366f1",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  playBtnActive: { backgroundColor: "#4f46e5" },
+  playBtnActive: {
+    backgroundColor: "#4f46e5",
+    transform: [{ scale: 1.05 }],
+  },
 });

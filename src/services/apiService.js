@@ -280,6 +280,13 @@ const apiService = {
    */
   register: async ({ name, email, password }) => {
     try {
+      if (!API_BASE_URL) {
+        return {
+          ok: false,
+          message: "API URL not configured. Please check your environment variables.",
+        };
+      }
+
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: {
@@ -287,6 +294,33 @@ const apiService = {
         },
         body: JSON.stringify({ name, email, password }),
       });
+
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("❌ Non-JSON response:", text.substring(0, 200));
+        
+        // Check for specific error cases
+        if (text.includes("Service Suspended") || text.includes("service suspended")) {
+          return {
+            ok: false,
+            message: "Backend service is suspended. If using Render.com free tier, the service sleeps after inactivity. Please wake it up or use a local backend.",
+          };
+        }
+        
+        if (text.includes("404") || response.status === 404) {
+          return {
+            ok: false,
+            message: "API endpoint not found. Please check if the backend server is running and the URL is correct.",
+          };
+        }
+        
+        return {
+          ok: false,
+          message: `Server error (${response.status}). Please check if the API server is running.`,
+        };
+      }
 
       const result = await response.json();
 
@@ -303,9 +337,18 @@ const apiService = {
       };
     } catch (error) {
       console.error("❌ Error registering:", error);
+      
+      // Handle JSON parse errors specifically
+      if (error.message && error.message.includes("JSON")) {
+        return {
+          ok: false,
+          message: "Server returned invalid response. Please check if the API server is running and accessible.",
+        };
+      }
+      
       return {
         ok: false,
-        message: "Unable to reach server. Please try again.",
+        message: "Unable to reach server. Please check your connection and API URL.",
       };
     }
   },
@@ -315,6 +358,13 @@ const apiService = {
    */
   login: async ({ email, password }) => {
     try {
+      if (!API_BASE_URL) {
+        return {
+          ok: false,
+          message: "API URL not configured. Please check your environment variables.",
+        };
+      }
+
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
@@ -322,6 +372,33 @@ const apiService = {
         },
         body: JSON.stringify({ email, password }),
       });
+
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("❌ Non-JSON response:", text.substring(0, 200));
+        
+        // Check for specific error cases
+        if (text.includes("Service Suspended") || text.includes("service suspended")) {
+          return {
+            ok: false,
+            message: "Backend service is suspended. If using Render.com free tier, the service sleeps after inactivity. Please wake it up or use a local backend.",
+          };
+        }
+        
+        if (text.includes("404") || response.status === 404) {
+          return {
+            ok: false,
+            message: "API endpoint not found. Please check if the backend server is running and the URL is correct.",
+          };
+        }
+        
+        return {
+          ok: false,
+          message: `Server error (${response.status}). Please check if the API server is running.`,
+        };
+      }
 
       const result = await response.json();
 
@@ -338,9 +415,18 @@ const apiService = {
       };
     } catch (error) {
       console.error("❌ Error logging in:", error);
+      
+      // Handle JSON parse errors specifically
+      if (error.message && error.message.includes("JSON")) {
+        return {
+          ok: false,
+          message: "Server returned invalid response. Please check if the API server is running and accessible.",
+        };
+      }
+      
       return {
         ok: false,
-        message: "Unable to reach server. Please try again.",
+        message: "Unable to reach server. Please check your connection and API URL.",
       };
     }
   },
@@ -350,6 +436,13 @@ const apiService = {
    */
   googleAuth: async ({ name, email }) => {
     try {
+      if (!API_BASE_URL) {
+        return {
+          ok: false,
+          message: "API URL not configured. Please check your environment variables.",
+        };
+      }
+
       const response = await fetch(`${API_BASE_URL}/auth/google`, {
         method: "POST",
         headers: {
@@ -357,6 +450,33 @@ const apiService = {
         },
         body: JSON.stringify({ name, email }),
       });
+
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("❌ Non-JSON response:", text.substring(0, 200));
+        
+        // Check for specific error cases
+        if (text.includes("Service Suspended") || text.includes("service suspended")) {
+          return {
+            ok: false,
+            message: "Backend service is suspended. If using Render.com free tier, the service sleeps after inactivity. Please wake it up or use a local backend.",
+          };
+        }
+        
+        if (text.includes("404") || response.status === 404) {
+          return {
+            ok: false,
+            message: "API endpoint not found. Please check if the backend server is running and the URL is correct.",
+          };
+        }
+        
+        return {
+          ok: false,
+          message: `Server error (${response.status}). Please check if the API server is running.`,
+        };
+      }
 
       const result = await response.json();
 
@@ -373,9 +493,18 @@ const apiService = {
       };
     } catch (error) {
       console.error("❌ Error with Google auth:", error);
+      
+      // Handle JSON parse errors specifically
+      if (error.message && error.message.includes("JSON")) {
+        return {
+          ok: false,
+          message: "Server returned invalid response. Please check if the API server is running and accessible.",
+        };
+      }
+      
       return {
         ok: false,
-        message: "Unable to reach server. Please try again.",
+        message: "Unable to reach server. Please check your connection and API URL.",
       };
     }
   },
