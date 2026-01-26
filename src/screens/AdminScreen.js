@@ -4,15 +4,15 @@ import { Audio } from "expo-av";
 import * as DocumentPicker from "expo-document-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { API_BASE_URL } from "../config/api.config";
@@ -133,31 +133,37 @@ export default function AdminScreen() {
     setIsSubmitting(true);
 
     try {
-      const payload = {
-        title: title.trim(),
-        category,
-        duration: Number(duration),
-        audioUrl: audioFile.uri,
-        source: "ai_generated",
-        license_type: "Envato MusicGen – Commercial License",
-        license_url: licenseFile.uri,
-        original_audio_url: originalAudioUrl.trim(),
-        artist_name: "Envato MusicGen AI",
-        attribution_required: false,
-        is_redistribution_allowed: false,
-        usage_notes:
-          "Licensed via Envato MusicGen. Allowed for commercial use inside this app as part of an end product. Redistribution outside the app is not permitted.",
-      };
+      const formData = new FormData();
 
-      const response = await fetch(`${API_BASE_URL}/admin/audio`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      formData.append("title", title.trim());
+      formData.append("category", category);
+      formData.append("duration", String(Number(duration)));
+      formData.append("original_audio_url", originalAudioUrl.trim());
+      formData.append("artist_name", "Envato MusicGen AI");
+
+      // File fields expected by backend: audio, license_txt
+      formData.append("audio", {
+        uri: audioFile.uri,
+        name: audioFile.name || "audio-file",
+        type: audioFile.mimeType || "audio/mpeg",
       });
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || "Upload failed.");
+      formData.append("license_txt", {
+        uri: licenseFile.uri,
+        name: licenseFile.name || "license.txt",
+        type: licenseFile.mimeType || "text/plain",
+      });
+
+      const response = await fetch(`${API_BASE_URL}/audio/upload`, {
+        method: "POST",
+        // Don't set Content-Type; let fetch/React Native set the multipart boundary
+        body: formData,
+      });
+
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok || !json.success) {
+        throw new Error(json.error || json.message || "Upload failed.");
       }
 
       setStatusMessage("Audio uploaded successfully.");
