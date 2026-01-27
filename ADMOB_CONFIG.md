@@ -50,6 +50,7 @@ In development mode, the app automatically uses Google's test ad unit IDs. No ch
 ### 5. Production Build
 
 After updating the IDs:
+
 1. Rebuild your app: `npx expo prebuild --clean`
 2. Build for production: `eas build --platform android` or `eas build --platform ios`
 
@@ -75,7 +76,8 @@ In `MusicListScreen.js`, modify:
 
 ```javascript
 // Show ad every N plays
-if (playCountRef.current % 5 === 0) { // Change 5 to your desired frequency
+if (playCountRef.current % 5 === 0) {
+  // Change 5 to your desired frequency
   interstitialAdRef.current.show();
 }
 ```
@@ -120,4 +122,3 @@ const isPremium = usePremium(); // Your premium check
 - Test ads are automatically used in development mode
 - Production ads require valid AdMob account and unit IDs
 - All ads respect user privacy (non-personalized ads)
-

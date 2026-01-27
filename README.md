@@ -88,7 +88,7 @@ Your Backend API (localhost:5000)
 ### Project Structure
 
 ```
-BMApp/
+ReelSound/
 ├── app/                          # App screens (Expo Router)
 ├── src/
 │   ├── screens/                  # Screen components

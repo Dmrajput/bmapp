@@ -45,9 +45,18 @@ if (!isExpoGo) {
 
 // Ad Unit IDs - Replace with your actual AdMob unit IDs
 const AD_UNIT_IDS = {
-  BANNER: __DEV__ && TestIds ? TestIds.BANNER : "ca-app-pub-xxxxxxxx/yyyyyyyy",
-  INTERSTITIAL: __DEV__ && TestIds ? TestIds.INTERSTITIAL : "ca-app-pub-xxxxxxxx/zzzzzzzz",
-  REWARDED: __DEV__ && TestIds ? TestIds.REWARDED : "ca-app-pub-xxxxxxxx/wwwwwwww",
+  BANNER:
+    __DEV__ && TestIds
+      ? TestIds.BANNER
+      : "ca-app-pub-2136043836079463~9890171450",
+  INTERSTITIAL:
+    __DEV__ && TestIds
+      ? TestIds.INTERSTITIAL
+      : "ca-app-pub-2136043836079463~9890171450",
+  REWARDED:
+    __DEV__ && TestIds
+      ? TestIds.REWARDED
+      : "ca-app-pub-2136043836079463~9890171450",
 };
 
 // Initialize AdMob (only once)
@@ -81,27 +90,30 @@ export default function MusicListScreen({ route }) {
   const playCountRef = useRef(0);
 
   /* ---------------- FETCH AUDIO ---------------- */
-  const loadMusic = useCallback(async (showRefresh = false) => {
-    if (showRefresh) {
-      setRefreshing(true);
-    } else {
-      setIsLoadingData(true);
-    }
+  const loadMusic = useCallback(
+    async (showRefresh = false) => {
+      if (showRefresh) {
+        setRefreshing(true);
+      } else {
+        setIsLoadingData(true);
+      }
 
-    try {
-      const data =
-        categoryParam === "All"
-          ? await apiService.fetchFormattedAudio()
-          : await apiService.fetchFormattedAudioByCategory(categoryParam);
+      try {
+        const data =
+          categoryParam === "All"
+            ? await apiService.fetchFormattedAudio()
+            : await apiService.fetchFormattedAudioByCategory(categoryParam);
 
-      setMusicList(data);
-    } catch (e) {
-      console.log("❌ Fetch error:", e);
-    } finally {
-      setIsLoadingData(false);
-      setRefreshing(false);
-    }
-  }, [categoryParam]);
+        setMusicList(data);
+      } catch (e) {
+        console.log("❌ Fetch error:", e);
+      } finally {
+        setIsLoadingData(false);
+        setRefreshing(false);
+      }
+    },
+    [categoryParam],
+  );
 
   useEffect(() => {
     loadMusic();
@@ -313,7 +325,10 @@ export default function MusicListScreen({ route }) {
               />
             </Pressable>
 
-            <Pressable style={styles.actionBtn} onPress={() => openDetails(item)}>
+            <Pressable
+              style={styles.actionBtn}
+              onPress={() => openDetails(item)}
+            >
               <Ionicons
                 name="information-circle-outline"
                 size={22}

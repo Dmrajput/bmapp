@@ -1,12 +1,12 @@
 import apiService from "@/src/services/apiService";
 import SessionManager from "@/src/utils/SessionManager";
 import React, {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 
 const AuthContext = createContext({
@@ -47,76 +47,67 @@ export function AuthProvider({ children }) {
     loadSession();
   }, []);
 
-  const signUp = useCallback(
-    async ({ name, email, password }) => {
-      const result = await apiService.register({ name, email, password });
+  const signUp = useCallback(async ({ name, email, password }) => {
+    const result = await apiService.register({ name, email, password });
 
-      if (!result?.ok || !result.user) {
-        return {
-          ok: false,
-          message: result?.message || "Unable to create account.",
-        };
-      }
+    if (!result?.ok || !result.user) {
+      return {
+        ok: false,
+        message: result?.message || "Unable to create account.",
+      };
+    }
 
-      setUser(result.user);
+    setUser(result.user);
+    await SessionManager.saveSession(result.user);
+
+    return {
+      ok: true,
+      message: result.message || "Account created",
+    };
+  }, []);
+
+  const signIn = useCallback(async ({ email, password, remember }) => {
+    const result = await apiService.login({ email, password });
+
+    if (!result?.ok || !result.user) {
+      return {
+        ok: false,
+        message: result?.message || "Invalid email or password.",
+      };
+    }
+
+    setUser(result.user);
+
+    if (remember) {
       await SessionManager.saveSession(result.user);
+    } else {
+      await SessionManager.clearSession();
+    }
 
+    return {
+      ok: true,
+      message: result.message || "Login successful",
+    };
+  }, []);
+
+  const signInWithGoogle = useCallback(async ({ name, email }) => {
+    const result = await apiService.googleAuth({ name, email });
+
+    if (!result?.ok || !result.user) {
       return {
-        ok: true,
-        message: result.message || "Account created",
+        ok: false,
+        message: result?.message || "Unable to sign in with Google.",
       };
-    },
-    [],
-  );
+    }
 
-  const signIn = useCallback(
-    async ({ email, password, remember }) => {
-      const result = await apiService.login({ email, password });
+    setUser(result.user);
+    await SessionManager.saveSession(result.user);
 
-      if (!result?.ok || !result.user) {
-        return {
-          ok: false,
-          message: result?.message || "Invalid email or password.",
-        };
-      }
-
-      setUser(result.user);
-
-      if (remember) {
-        await SessionManager.saveSession(result.user);
-      } else {
-        await SessionManager.clearSession();
-      }
-
-      return {
-        ok: true,
-        message: result.message || "Login successful",
-      };
-    },
-    [],
-  );
-
-  const signInWithGoogle = useCallback(
-    async ({ name, email }) => {
-      const result = await apiService.googleAuth({ name, email });
-
-      if (!result?.ok || !result.user) {
-        return {
-          ok: false,
-          message: result?.message || "Unable to sign in with Google.",
-        };
-      }
-
-      setUser(result.user);
-      await SessionManager.saveSession(result.user);
-
-      return {
-        ok: true,
-        message: result.message || "Google auth successful",
-      };
-    },
-    [],
-  );
+    return {
+      ok: true,
+      message: result.message || "Google auth successful",
+    };
+  }, []);
 
   const signOut = useCallback(async () => {
     setUser(null);
@@ -135,14 +126,7 @@ export function AuthProvider({ children }) {
       signInWithGoogle,
       isLoggedIn: !!user,
     }),
-    [
-      user,
-      isLoading,
-      signIn,
-      signUp,
-      signOut,
-      signInWithGoogle,
-    ],
+    [user, isLoading, signIn, signUp, signOut, signInWithGoogle],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -40,13 +40,6 @@ export default function WelcomeScreen() {
         >
           <Text style={styles.secondaryText}>Continue with Google</Text>
         </Pressable> */}
-
-        <Pressable
-          onPress={() => router.replace("/(tabs)")}
-          style={styles.skipBtn}
-        >
-          <Text style={styles.skipText}>Skip for now</Text>
-        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -112,13 +105,5 @@ const styles = StyleSheet.create({
     color: "#e2e8f0",
     fontWeight: "600",
     fontSize: 16,
-  },
-  skipBtn: {
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-  skipText: {
-    color: "#9aa0a6",
-    fontSize: 13,
   },
 });
