@@ -48,15 +48,15 @@ const AD_UNIT_IDS = {
   BANNER:
     __DEV__ && TestIds
       ? TestIds.BANNER
-      : "ca-app-pub-2136043836079463~9890171450",
+      : "ca-app-pub-2136043836079463/6534214524",
   INTERSTITIAL:
     __DEV__ && TestIds
       ? TestIds.INTERSTITIAL
-      : "ca-app-pub-2136043836079463~9890171450",
+      : "ca-app-pub-2136043836079463/1855112220",
   REWARDED:
     __DEV__ && TestIds
       ? TestIds.REWARDED
-      : "ca-app-pub-2136043836079463~9890171450",
+      : "ca-app-pub-2136043836079463/3908051186",
 };
 
 // Initialize AdMob (only once)
