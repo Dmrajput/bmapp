@@ -1,11 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import {
-    googleAuth,
-    login,
-    refreshToken,
-    register,
-} from "../controllers/auth.controller.js";
+import { googleAuth, login, register } from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
@@ -26,8 +21,5 @@ router.post("/login", login);
 
 // POST /api/auth/google
 router.post("/google", googleAuth);
-
-// POST /api/auth/refresh
-router.post("/refresh", refreshToken);
 
 export default router;

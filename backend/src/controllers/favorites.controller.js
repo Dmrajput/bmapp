@@ -2,7 +2,16 @@ import Favorite from "../models/Favorite.js";
 
 export const getFavorites = async (req, res) => {
   try {
-    const favorites = await Favorite.find({}).sort({ createdAt: -1 });
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: "userId is required",
+      });
+    }
+
+    const favorites = await Favorite.find({ userId }).sort({ createdAt: -1 });
     return res.status(200).json({
       success: true,
       message: "Favorites fetched successfully",
@@ -19,7 +28,14 @@ export const getFavorites = async (req, res) => {
 
 export const addFavorite = async (req, res) => {
   try {
-    const { audioId, title, category, duration, audioUrl } = req.body;
+    const { userId, audioId, title, category, duration, audioUrl } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: "userId is required",
+      });
+    }
 
     if (!audioId) {
       return res.status(400).json({
@@ -29,8 +45,8 @@ export const addFavorite = async (req, res) => {
     }
 
     const favorite = await Favorite.findOneAndUpdate(
-      { audioId },
-      { audioId, title, category, duration, audioUrl },
+      { userId, audioId },
+      { userId, audioId, title, category, duration, audioUrl },
       { new: true, upsert: true },
     );
 
@@ -51,6 +67,8 @@ export const addFavorite = async (req, res) => {
 export const removeFavorite = async (req, res) => {
   try {
     const { audioId } = req.params;
+    const { userId } = req.query;
+
     if (!audioId) {
       return res.status(400).json({
         success: false,
@@ -58,7 +76,14 @@ export const removeFavorite = async (req, res) => {
       });
     }
 
-    await Favorite.findOneAndDelete({ audioId });
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: "userId is required",
+      });
+    }
+
+    await Favorite.findOneAndDelete({ userId, audioId });
 
     return res.status(200).json({
       success: true,
