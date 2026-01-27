@@ -13,7 +13,7 @@ import { FavoritesProvider } from "@/context/favorites-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export const unstable_settings = {
-  anchor: "(tabs)",
+  anchor: "auth",
 };
 
 function AuthGate({ children }: { children: React.ReactNode }) {
@@ -23,7 +23,16 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (isLoading) return;
+
     const inAuth = segments[0] === "auth";
+
+    // If no user in session, always force auth flow.
+    if (!user && !inAuth) {
+      router.replace("/auth/login");
+      return;
+    }
+
+    // If user is logged in and we are in auth stack, go to home tabs.
     if (user && inAuth) {
       router.replace("/(tabs)");
     }
