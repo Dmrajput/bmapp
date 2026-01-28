@@ -28,6 +28,7 @@ let TestIds = null;
 let InterstitialAd = null;
 let RewardedAd = null;
 let mobileAds = null;
+let AdEventType = null;
 
 if (!isExpoGo) {
   try {
@@ -38,12 +39,13 @@ if (!isExpoGo) {
     InterstitialAd = ads.InterstitialAd;
     RewardedAd = ads.RewardedAd;
     mobileAds = ads.mobileAds;
+    AdEventType = ads.AdEventType;
   } catch (error) {
     console.log("⚠️ AdMob not available:", error.message);
   }
 }
 
-// Ad Unit IDs - Replace with your actual AdMob unit IDs
+/* ---------------- AD UNIT IDS ---------------- */
 const AD_UNIT_IDS = {
   BANNER:
     __DEV__ && TestIds
@@ -58,15 +60,6 @@ const AD_UNIT_IDS = {
       ? TestIds.REWARDED
       : "ca-app-pub-2136043836079463/3908051186",
 };
-
-// Initialize AdMob (only once)
-if (mobileAds && !isExpoGo) {
-  try {
-    mobileAds().initialize();
-  } catch (error) {
-    console.log("⚠️ AdMob initialization error:", error.message);
-  }
-}
 
 /* ================================================= */
 
@@ -89,14 +82,67 @@ export default function MusicListScreen({ route }) {
   const interstitialAdRef = useRef(null);
   const playCountRef = useRef(0);
 
+  /* ---------------- ADMOB SAFE INIT ---------------- */
+  useEffect(() => {
+    if (!mobileAds || isExpoGo) return;
+
+    mobileAds()
+      .initialize()
+      .then(() => console.log("✅ AdMob initialized"))
+      .catch((e) => console.log("❌ AdMob init error:", e));
+  }, []);
+
+  /* ---------------- INTERSTITIAL SETUP (SAFE) ---------------- */
+  useEffect(() => {
+    if (!InterstitialAd || isExpoGo || !AdEventType) return;
+
+    const ad = InterstitialAd.createForAdRequest(
+      AD_UNIT_IDS.INTERSTITIAL,
+      { requestNonPersonalizedAdsOnly: true }
+    );
+
+    const unsubscribeLoaded = ad.addAdEventListener(
+      AdEventType.LOADED,
+      () => {
+        interstitialAdRef.current = ad;
+        console.log("✅ Interstitial loaded");
+      }
+    );
+
+    const unsubscribeError = ad.addAdEventListener(
+      AdEventType.ERROR,
+      (error) => {
+        console.log("❌ Interstitial failed:", error);
+      }
+    );
+
+    ad.load();
+
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeError();
+    };
+  }, []);
+
+  const showInterstitialAd = useCallback(() => {
+    if (!interstitialAdRef.current || isExpoGo) return;
+
+    playCountRef.current += 1;
+
+    if (playCountRef.current % 5 === 0) {
+      try {
+        interstitialAdRef.current.show();
+        interstitialAdRef.current = null; // force reload next
+      } catch (e) {
+        console.log("❌ Interstitial show error:", e);
+      }
+    }
+  }, []);
+
   /* ---------------- FETCH AUDIO ---------------- */
   const loadMusic = useCallback(
     async (showRefresh = false) => {
-      if (showRefresh) {
-        setRefreshing(true);
-      } else {
-        setIsLoadingData(true);
-      }
+      showRefresh ? setRefreshing(true) : setIsLoadingData(true);
 
       try {
         const data =
@@ -112,41 +158,12 @@ export default function MusicListScreen({ route }) {
         setRefreshing(false);
       }
     },
-    [categoryParam],
+    [categoryParam]
   );
 
   useEffect(() => {
     loadMusic();
   }, [loadMusic]);
-
-  /* ---------------- INTERSTITIAL AD SETUP ---------------- */
-  useEffect(() => {
-    if (InterstitialAd && !isExpoGo) {
-      try {
-        const ad = InterstitialAd.createForAdRequest(AD_UNIT_IDS.INTERSTITIAL, {
-          requestNonPersonalizedAdsOnly: true,
-        });
-        interstitialAdRef.current = ad;
-      } catch (error) {
-        console.log("⚠️ Interstitial ad setup error:", error.message);
-      }
-    }
-  }, []);
-
-  const showInterstitialAd = useCallback(() => {
-    if (interstitialAdRef.current && !isExpoGo) {
-      try {
-        playCountRef.current += 1;
-        // Show ad every 5 plays
-        if (playCountRef.current % 5 === 0) {
-          interstitialAdRef.current.load();
-          interstitialAdRef.current.show();
-        }
-      } catch (error) {
-        console.log("⚠️ Interstitial ad show error:", error.message);
-      }
-    }
-  }, []);
 
   /* ---------------- AUDIO CONTROL ---------------- */
   const unloadSound = useCallback(async () => {
@@ -162,7 +179,7 @@ export default function MusicListScreen({ route }) {
   useFocusEffect(
     useCallback(() => {
       return () => unloadSound();
-    }, [unloadSound]),
+    }, [unloadSound])
   );
 
   const playPause = useCallback(
@@ -184,7 +201,7 @@ export default function MusicListScreen({ route }) {
 
         const { sound } = await Audio.Sound.createAsync(
           { uri: item.uri },
-          { shouldPlay: true },
+          { shouldPlay: true }
         );
 
         sound.setOnPlaybackStatusUpdate((status) => {
@@ -197,7 +214,6 @@ export default function MusicListScreen({ route }) {
         setCurrentTrackId(item.id);
         setIsPlaying(true);
 
-        // Show interstitial ad after playing
         showInterstitialAd();
       } catch (e) {
         console.log("❌ Audio error:", e);
@@ -205,7 +221,7 @@ export default function MusicListScreen({ route }) {
         setIsLoadingSound(false);
       }
     },
-    [currentTrackId, isPlaying, unloadSound, showInterstitialAd],
+    [currentTrackId, isPlaying, unloadSound, showInterstitialAd]
   );
 
   const formatTime = (millis) => {
