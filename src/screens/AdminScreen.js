@@ -40,9 +40,18 @@ export default function AdminScreen() {
   const soundRef = useRef(null);
 
   const resetPreview = useCallback(async () => {
-    if (soundRef.current) {
-      await soundRef.current.stopAsync();
-      await soundRef.current.unloadAsync();
+    const sound = soundRef.current;
+    if (sound) {
+      try {
+        await sound.stopAsync();
+      } catch (e) {
+        console.log("⚠️ stopAsync error (AdminScreen resetPreview):", e);
+      }
+      try {
+        await sound.unloadAsync();
+      } catch (e) {
+        console.log("⚠️ unloadAsync error (AdminScreen resetPreview):", e);
+      }
       soundRef.current = null;
     }
     setIsPreviewPlaying(false);
@@ -77,24 +86,30 @@ export default function AdminScreen() {
   const handlePreview = async () => {
     if (!audioFile?.uri) return;
 
-    if (isPreviewPlaying && soundRef.current) {
-      await soundRef.current.pauseAsync();
-      setIsPreviewPlaying(false);
-      return;
-    }
+    try {
+      if (isPreviewPlaying && soundRef.current) {
+        await soundRef.current.pauseAsync();
+        setIsPreviewPlaying(false);
+        return;
+      }
 
-    if (!soundRef.current) {
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: audioFile.uri },
-        { shouldPlay: true },
-      );
-      soundRef.current = sound;
+      if (!soundRef.current) {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: audioFile.uri },
+          { shouldPlay: true },
+        );
+        soundRef.current = sound;
+        setIsPreviewPlaying(true);
+        return;
+      }
+
+      await soundRef.current.playAsync();
       setIsPreviewPlaying(true);
-      return;
+    } catch (e) {
+      console.log("❌ Preview audio error (AdminScreen):", e);
+      soundRef.current = null;
+      setIsPreviewPlaying(false);
     }
-
-    await soundRef.current.playAsync();
-    setIsPreviewPlaying(true);
   };
 
   const handleSubmit = async () => {

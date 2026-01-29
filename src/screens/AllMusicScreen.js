@@ -3,8 +3,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Audio } from "expo-av";
 import Constants from "expo-constants";
-import { Directory, File, Paths } from "expo-file-system";
-import * as MediaLibrary from "expo-media-library";
 import React, { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -30,7 +28,6 @@ export default function AllMusicScreen() {
   const [isLoadingSound, setIsLoadingSound] = useState(false);
   const [playbackPositionMillis, setPlaybackPositionMillis] = useState(0);
   const [playbackDurationMillis, setPlaybackDurationMillis] = useState(0);
-  const [downloadStates, setDownloadStates] = useState({});
 
   const soundRef = useRef(null);
 
@@ -51,20 +48,21 @@ export default function AllMusicScreen() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const getDownloadTarget = (item) => {
-    const base = String(item.id || item.title || "track")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-    const directory = new Directory(Paths.document, "all-music");
-    return new File(directory, `${base}.mp3`);
-  };
 
   /* ---------------- AUDIO CONTROL ---------------- */
   const unloadSound = useCallback(async () => {
-    if (soundRef.current) {
-      await soundRef.current.stopAsync();
-      await soundRef.current.unloadAsync();
+    const sound = soundRef.current;
+    if (sound) {
+      try {
+        await sound.stopAsync();
+      } catch (e) {
+        console.log("⚠️ stopAsync error (AllMusicScreen):", e);
+      }
+      try {
+        await sound.unloadAsync();
+      } catch (e) {
+        console.log("⚠️ unloadAsync error (AllMusicScreen):", e);
+      }
       soundRef.current = null;
     }
     setCurrentTrackId(null);
@@ -123,84 +121,6 @@ export default function AllMusicScreen() {
     [currentTrackId, isPlaying, unloadSound],
   );
 
-  /* ---------------- DOWNLOAD ---------------- */
-  const handleDownload = async (item) => {
-    if (!item?.uri) return;
-    const state = downloadStates[item.id] || "idle";
-    if (state === "downloading") return;
-
-    setDownloadStates((prev) => ({ ...prev, [item.id]: "downloading" }));
-
-    try {
-      // Check if we're in Expo Go (which has limited media library support)
-      const isExpoGo = Constants.executionEnvironment === "storeClient";
-
-      let permission;
-      try {
-        permission = await MediaLibrary.requestPermissionsAsync();
-      } catch (permError) {
-        // Catch permission request errors (common in Expo Go)
-        const errorMsg = String(permError?.message || "");
-        if (
-          errorMsg.includes("requestPermissionsAsync") ||
-          errorMsg.includes("not declared in AndroidManifest") ||
-          errorMsg.includes("has been rejected")
-        ) {
-          setErrorMessage(
-            isExpoGo
-              ? "Download feature requires a development build. Expo Go has limited media library access. Please build the app with 'npx expo run:android' to enable downloads."
-              : "Media permissions are not configured. Please rebuild the app after updating app.json permissions.",
-          );
-          setDownloadStates((prev) => ({ ...prev, [item.id]: "error" }));
-          return;
-        }
-        throw permError; // Re-throw if it's a different error
-      }
-
-      if (!permission.granted) {
-        setErrorMessage("Storage permission is required to save downloads.");
-        setDownloadStates((prev) => ({ ...prev, [item.id]: "error" }));
-        return;
-      }
-
-      const destination = getDownloadTarget(item);
-      destination.parentDirectory.create({
-        intermediates: true,
-        idempotent: true,
-      });
-      await File.downloadFileAsync(item.uri, destination, { idempotent: true });
-
-      const asset = await MediaLibrary.createAssetAsync(destination.uri);
-      await MediaLibrary.createAlbumAsync("Download", asset, false);
-      setDownloadStates((prev) => ({ ...prev, [item.id]: "downloaded" }));
-    } catch (error) {
-      // Only log non-permission errors to avoid console spam
-      const errorMsg = String(error?.message || "");
-      if (
-        !errorMsg.includes("requestPermissionsAsync") &&
-        !errorMsg.includes("not declared in AndroidManifest") &&
-        !errorMsg.includes("has been rejected")
-      ) {
-        console.log("❌ Download error:", error);
-      }
-
-      if (
-        errorMsg.includes("requestPermissionsAsync") ||
-        errorMsg.includes("not declared in AndroidManifest") ||
-        errorMsg.includes("has been rejected")
-      ) {
-        const isExpoGo = Constants.executionEnvironment === "storeClient";
-        setErrorMessage(
-          isExpoGo
-            ? "Download feature requires a development build. Expo Go has limited media library access. Please build the app with 'npx expo run:android' to enable downloads."
-            : "Media permissions are not configured. Please rebuild the app after updating app.json permissions.",
-        );
-      } else {
-        setErrorMessage("Unable to download right now. Please try again.");
-      }
-      setDownloadStates((prev) => ({ ...prev, [item.id]: "error" }));
-    }
-  };
 
   /* ---------------- DATA FETCH (ALL + SHUFFLE) ---------------- */
   useFocusEffect(
@@ -253,7 +173,6 @@ export default function AllMusicScreen() {
     const positionMillis = active ? playbackPositionMillis : 0;
     const progress = durationMillis ? positionMillis / durationMillis : 0;
     const favorite = isFavorite(item.id);
-    const downloadState = downloadStates[item.id] || "idle";
 
     return (
       <>
@@ -297,20 +216,6 @@ export default function AllMusicScreen() {
               />
             </Pressable>
 
-            <Pressable
-              style={styles.downloadBtn}
-              onPress={() => handleDownload(item)}
-            >
-              {downloadState === "downloading" ? (
-                <ActivityIndicator size="small" color="#6b7280" />
-              ) : downloadState === "downloaded" ? (
-                <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
-              ) : downloadState === "error" ? (
-                <Ionicons name="refresh" size={20} color="#ef4444" />
-              ) : (
-                <Ionicons name="download-outline" size={20} color="#6b7280" />
-              )}
-            </Pressable>
 
             <Pressable
               style={[styles.playBtn, active && styles.playBtnActive]}
@@ -486,9 +391,6 @@ const styles = StyleSheet.create({
   cardActions: {
     alignItems: "center",
     gap: 10,
-  },
-  downloadBtn: {
-    padding: 4,
   },
   playBtn: {
     width: 40,

@@ -49,9 +49,14 @@ export function FavoritesProvider({ children }) {
 
         const raw = await AsyncStorage.getItem(FAVORITES_KEY);
         if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            setFavorites(parsed);
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              setFavorites(parsed);
+            }
+          } catch (parseError) {
+            console.log("⚠️ Corrupted favorites in storage, clearing.", parseError);
+            await AsyncStorage.removeItem(FAVORITES_KEY);
           }
         }
 

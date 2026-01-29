@@ -29,7 +29,18 @@ export default function TrackDetailsScreen() {
 
   useEffect(() => {
     return () => {
-      soundRef.current?.unloadAsync();
+      const sound = soundRef.current;
+      if (sound) {
+        sound
+          .stopAsync()
+          .catch((e) => console.log("⚠️ stopAsync error (TrackDetails):", e));
+        sound
+          .unloadAsync()
+          .catch((e) =>
+            console.log("⚠️ unloadAsync error (TrackDetails):", e),
+          );
+        soundRef.current = null;
+      }
     };
   }, []);
 
@@ -44,8 +55,17 @@ export default function TrackDetailsScreen() {
     if (!item?.audioUrl && !item?.uri) return;
 
     if (soundRef.current) {
-      await soundRef.current.stopAsync();
-      await soundRef.current.unloadAsync();
+      const sound = soundRef.current;
+      try {
+        await sound.stopAsync();
+      } catch (e) {
+        console.log("⚠️ stopAsync error (TrackDetails playPreview):", e);
+      }
+      try {
+        await sound.unloadAsync();
+      } catch (e) {
+        console.log("⚠️ unloadAsync error (TrackDetails playPreview):", e);
+      }
       soundRef.current = null;
       setIsPlaying(false);
       return;
@@ -61,7 +81,14 @@ export default function TrackDetailsScreen() {
       sound.setOnPlaybackStatusUpdate((status) => {
         if (!status.isLoaded) return;
         if (status.didJustFinish) {
-          sound.unloadAsync();
+          sound
+            .unloadAsync()
+            .catch((e) =>
+              console.log(
+                "⚠️ unloadAsync error (TrackDetails status callback):",
+                e,
+              ),
+            );
           soundRef.current = null;
           setIsPlaying(false);
         }

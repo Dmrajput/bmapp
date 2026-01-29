@@ -96,24 +96,20 @@ export default function MusicListScreen({ route }) {
   useEffect(() => {
     if (!InterstitialAd || isExpoGo || !AdEventType) return;
 
-    const ad = InterstitialAd.createForAdRequest(
-      AD_UNIT_IDS.INTERSTITIAL,
-      { requestNonPersonalizedAdsOnly: true }
-    );
+    const ad = InterstitialAd.createForAdRequest(AD_UNIT_IDS.INTERSTITIAL, {
+      requestNonPersonalizedAdsOnly: true,
+    });
 
-    const unsubscribeLoaded = ad.addAdEventListener(
-      AdEventType.LOADED,
-      () => {
-        interstitialAdRef.current = ad;
-        console.log("✅ Interstitial loaded");
-      }
-    );
+    const unsubscribeLoaded = ad.addAdEventListener(AdEventType.LOADED, () => {
+      interstitialAdRef.current = ad;
+      console.log("✅ Interstitial loaded");
+    });
 
     const unsubscribeError = ad.addAdEventListener(
       AdEventType.ERROR,
       (error) => {
         console.log("❌ Interstitial failed:", error);
-      }
+      },
     );
 
     ad.load();
@@ -158,7 +154,7 @@ export default function MusicListScreen({ route }) {
         setRefreshing(false);
       }
     },
-    [categoryParam]
+    [categoryParam],
   );
 
   useEffect(() => {
@@ -179,7 +175,7 @@ export default function MusicListScreen({ route }) {
   useFocusEffect(
     useCallback(() => {
       return () => unloadSound();
-    }, [unloadSound])
+    }, [unloadSound]),
   );
 
   const playPause = useCallback(
@@ -201,7 +197,7 @@ export default function MusicListScreen({ route }) {
 
         const { sound } = await Audio.Sound.createAsync(
           { uri: item.uri },
-          { shouldPlay: true }
+          { shouldPlay: true },
         );
 
         sound.setOnPlaybackStatusUpdate((status) => {
@@ -221,7 +217,7 @@ export default function MusicListScreen({ route }) {
         setIsLoadingSound(false);
       }
     },
-    [currentTrackId, isPlaying, unloadSound, showInterstitialAd]
+    [currentTrackId, isPlaying, unloadSound, showInterstitialAd],
   );
 
   const formatTime = (millis) => {

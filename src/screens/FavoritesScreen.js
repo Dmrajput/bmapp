@@ -31,9 +31,18 @@ export default function FavoritesScreen() {
 
   /* ---------------- AUDIO ---------------- */
   const unloadSound = useCallback(async () => {
-    if (soundRef.current) {
-      await soundRef.current.stopAsync();
-      await soundRef.current.unloadAsync();
+    const sound = soundRef.current;
+    if (sound) {
+      try {
+        await sound.stopAsync();
+      } catch (e) {
+        console.log("⚠️ stopAsync error (FavoritesScreen):", e);
+      }
+      try {
+        await sound.unloadAsync();
+      } catch (e) {
+        console.log("⚠️ unloadAsync error (FavoritesScreen):", e);
+      }
       soundRef.current = null;
     }
     setCurrentTrackId(null);
