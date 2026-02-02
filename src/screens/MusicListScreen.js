@@ -25,14 +25,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import apiService from "../services/apiService";
 
-/* ---------------- ADMOB CONFIGURATION ---------------- */
+/* ================= ADMOB CONFIG ================= */
 const isExpoGo =
   Constants.executionEnvironment === "storeClient" ||
   (Constants.appOwnership === "expo" && !Constants.executionEnvironment);
 
 let BannerAd = null;
 let BannerAdSize = null;
-let TestIds = null;
 let InterstitialAd = null;
 let mobileAds = null;
 let AdEventType = null;
@@ -42,27 +41,20 @@ if (!isExpoGo) {
     const ads = require("react-native-google-mobile-ads");
     BannerAd = ads.BannerAd;
     BannerAdSize = ads.BannerAdSize;
-    TestIds = ads.TestIds;
     InterstitialAd = ads.InterstitialAd;
     mobileAds = ads.mobileAds;
     AdEventType = ads.AdEventType;
-  } catch (e) {
+  } catch {
     console.log("⚠️ AdMob not available");
   }
 }
 
-/* ---------------- AD UNIT IDS ---------------- */
+/* 🔐 PRODUCTION AD UNIT IDS */
 const AD_UNIT_IDS = {
-  BANNER:
-    __DEV__ && TestIds
-      ? TestIds.BANNER
-      : "ca-app-pub-2136043836079463/6534214524",
-
-  INTERSTITIAL:
-    __DEV__ && TestIds
-      ? TestIds.INTERSTITIAL
-      : "ca-app-pub-2136043836079463/1855112220",
+  BANNER: "ca-app-pub-2136043836079463/6534214524",
+  INTERSTITIAL: "ca-app-pub-2136043836079463/1855112220",
 };
+/* =============================================== */
 
 /* ---------------- SOUND WAVE BUTTON ---------------- */
 function PlayWaveButton({ playing, onPress, disabled }) {
@@ -173,21 +165,17 @@ export default function MemeSoundsScreen() {
   const [isLoadingSound, setIsLoadingSound] = useState(false);
 
   const soundRef = useRef(null);
-  const interstitialAdRef = useRef(null);
+  const interstitialRef = useRef(null);
   const playCountRef = useRef(0);
 
-  /* ---------------- ADMOB INIT ---------------- */
+  /* -------- ADMOB INIT -------- */
   useEffect(() => {
     if (!mobileAds || isExpoGo) return;
-
-    mobileAds()
-      .initialize()
-      .then(() => console.log("✅ AdMob initialized"))
-      .catch(() => {});
+    mobileAds().initialize();
   }, []);
 
-  /* ---------------- INTERSTITIAL SETUP ---------------- */
-  useEffect(() => {
+  /* -------- LOAD INTERSTITIAL -------- */
+  const loadInterstitial = useCallback(() => {
     if (!InterstitialAd || isExpoGo || !AdEventType) return;
 
     const ad = InterstitialAd.createForAdRequest(AD_UNIT_IDS.INTERSTITIAL, {
@@ -195,26 +183,29 @@ export default function MemeSoundsScreen() {
     });
 
     ad.addAdEventListener(AdEventType.LOADED, () => {
-      interstitialAdRef.current = ad;
+      interstitialRef.current = ad;
     });
 
     ad.load();
   }, []);
 
+  useEffect(() => {
+    loadInterstitial();
+  }, [loadInterstitial]);
+
   const showInterstitialAd = useCallback(() => {
-    if (!interstitialAdRef.current || isExpoGo) return;
+    if (!interstitialRef.current || isExpoGo) return;
 
     playCountRef.current += 1;
 
     if (playCountRef.current % 10 === 0) {
-      try {
-        interstitialAdRef.current.show();
-        interstitialAdRef.current = null;
-      } catch {}
+      interstitialRef.current.show();
+      interstitialRef.current = null;
+      loadInterstitial();
     }
-  }, []);
+  }, [loadInterstitial]);
 
-  /* ---------------- FILTER ---------------- */
+  /* -------- FILTER -------- */
   const filteredList = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return soundList;
@@ -225,7 +216,7 @@ export default function MemeSoundsScreen() {
     );
   }, [soundList, searchQuery]);
 
-  /* ---------------- SHARE ---------------- */
+  /* -------- SHARE -------- */
   const useSound = async (item) => {
     try {
       await Share.share({ message: item.uri });
@@ -234,7 +225,7 @@ export default function MemeSoundsScreen() {
     }
   };
 
-  /* ---------------- STOP AUDIO ---------------- */
+  /* -------- STOP AUDIO -------- */
   const stopSound = useCallback(async () => {
     if (soundRef.current) {
       await soundRef.current.stopAsync();
@@ -245,11 +236,12 @@ export default function MemeSoundsScreen() {
     setIsPlaying(false);
   }, []);
 
-  /* ---------------- PLAY / PAUSE ---------------- */
+  /* -------- PLAY / PAUSE -------- */
   const playPause = useCallback(
     async (item) => {
       if (isLoadingSound) return;
       setIsLoadingSound(true);
+
       try {
         if (currentTrackId === item.id && soundRef.current) {
           isPlaying
@@ -281,7 +273,7 @@ export default function MemeSoundsScreen() {
     [currentTrackId, isPlaying, isLoadingSound, stopSound, showInterstitialAd],
   );
 
-  /* ---------------- FETCH ---------------- */
+  /* -------- FETCH -------- */
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -298,7 +290,7 @@ export default function MemeSoundsScreen() {
     }, [stopSound]),
   );
 
-  /* ---------------- RENDER ITEM ---------------- */
+  /* -------- RENDER -------- */
   const renderItem = ({ item }) => {
     const active = currentTrackId === item.id;
     const playing = active && isPlaying;
@@ -358,8 +350,8 @@ export default function MemeSoundsScreen() {
         />
       )}
 
-      {/* BOTTOM BANNER AD */}
-      {BannerAd && BannerAdSize && (
+      {/* -------- BANNER AD -------- */}
+      {BannerAd && BannerAdSize && !isExpoGo && (
         <View style={{ alignItems: "center", paddingBottom: 6 }}>
           <BannerAd
             unitId={AD_UNIT_IDS.BANNER}

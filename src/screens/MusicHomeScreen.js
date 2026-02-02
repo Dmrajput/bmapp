@@ -2,12 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Audio } from "expo-av";
 import Constants from "expo-constants";
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -29,7 +24,6 @@ const isExpoGo =
 
 let BannerAd = null;
 let BannerAdSize = null;
-let TestIds = null;
 let InterstitialAd = null;
 let mobileAds = null;
 let AdEventType = null;
@@ -39,22 +33,18 @@ if (!isExpoGo) {
     const ads = require("react-native-google-mobile-ads");
     BannerAd = ads.BannerAd;
     BannerAdSize = ads.BannerAdSize;
-    TestIds = ads.TestIds;
     InterstitialAd = ads.InterstitialAd;
     mobileAds = ads.mobileAds;
     AdEventType = ads.AdEventType;
-  } catch {}
+  } catch (e) {
+    console.warn("AdMob not available", e);
+  }
 }
 
+/* 🔐 PRODUCTION AD UNIT IDS */
 const AD_UNIT_IDS = {
-  BANNER:
-    __DEV__ && TestIds
-      ? TestIds.BANNER
-      : "ca-app-pub-2136043836079463/6534214524",
-  INTERSTITIAL:
-    __DEV__ && TestIds
-      ? TestIds.INTERSTITIAL
-      : "ca-app-pub-2136043836079463/1855112220",
+  BANNER: "ca-app-pub-2136043836079463/6534214524",
+  INTERSTITIAL: "ca-app-pub-2136043836079463/1855112220",
 };
 /* ======================================================== */
 
@@ -143,7 +133,6 @@ export default function MusicListScreen() {
   const [currentTrackTitle, setCurrentTrackTitle] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingSound, setIsLoadingSound] = useState(false);
-  const [playbackDurationMillis, setPlaybackDurationMillis] = useState(0);
 
   const soundRef = useRef(null);
   const interstitialRef = useRef(null);
@@ -155,8 +144,8 @@ export default function MusicListScreen() {
     mobileAds().initialize();
   }, []);
 
-  /* -------- INTERSTITIAL SETUP -------- */
-  useEffect(() => {
+  /* -------- LOAD INTERSTITIAL -------- */
+  const loadInterstitial = useCallback(() => {
     if (!InterstitialAd || isExpoGo || !AdEventType) return;
 
     const ad = InterstitialAd.createForAdRequest(AD_UNIT_IDS.INTERSTITIAL, {
@@ -170,6 +159,10 @@ export default function MusicListScreen() {
     ad.load();
   }, []);
 
+  useEffect(() => {
+    loadInterstitial();
+  }, [loadInterstitial]);
+
   const showInterstitial = useCallback(() => {
     if (!interstitialRef.current || isExpoGo) return;
 
@@ -178,8 +171,9 @@ export default function MusicListScreen() {
     if (playCountRef.current % 10 === 0) {
       interstitialRef.current.show();
       interstitialRef.current = null;
+      loadInterstitial(); // reload next ad
     }
-  }, []);
+  }, [loadInterstitial]);
 
   /* -------- AUDIO -------- */
   const unloadSound = useCallback(async () => {
@@ -215,10 +209,6 @@ export default function MusicListScreen() {
           { shouldPlay: true },
         );
 
-        sound.setOnPlaybackStatusUpdate((s) => {
-          if (s.durationMillis) setPlaybackDurationMillis(s.durationMillis);
-        });
-
         soundRef.current = sound;
         setCurrentTrackId(item.id);
         setCurrentTrackTitle(item.title || "");
@@ -234,23 +224,17 @@ export default function MusicListScreen() {
 
   const shareTrack = useCallback(async (item) => {
     try {
-      const title = item.title ? `"${item.title}"` : "this track";
-      const url = item.uri;
-      const message = url ? `Listen to ${title}\n${url}` : `Listen to ${title}`;
-
-      await Share.share(url ? { message, url } : { message });
-    } catch (error) {
-      console.warn("Share failed", error);
+      const message = item.uri
+        ? `Listen to "${item.title}"\n${item.uri}`
+        : `Listen to "${item.title}"`;
+      await Share.share({ message });
+    } catch (e) {
+      console.warn("Share failed", e);
     }
   }, []);
 
   const loadPage = useCallback(async ({ pageToLoad, query, replace }) => {
-    if (replace) {
-      setIsLoading(true);
-    } else {
-      setIsLoadingPage(true);
-    }
-
+    replace ? setIsLoading(true) : setIsLoadingPage(true);
     try {
       const result = await apiService.fetchFormattedAudioPaged({
         page: pageToLoad,
@@ -265,7 +249,7 @@ export default function MusicListScreen() {
       setHasMore(
         typeof result.meta?.hasMore === "boolean"
           ? result.meta.hasMore
-          : (result.data || []).length === PAGE_SIZE,
+          : result.data.length === PAGE_SIZE,
       );
       setPage(pageToLoad);
     } finally {
@@ -281,7 +265,6 @@ export default function MusicListScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery, loadPage]);
 
-  /* -------- RENDER -------- */
   const renderItem = ({ item }) => {
     const active = currentTrackId === item.id;
     return (
@@ -294,12 +277,12 @@ export default function MusicListScreen() {
         </View>
 
         <View style={styles.actions}>
-          <Pressable style={styles.shareBtn} onPress={() => shareTrack(item)}>
+          <Pressable onPress={() => shareTrack(item)} style={styles.shareBtn}>
             <Ionicons name="share-social" size={18} color="#0F172A" />
           </Pressable>
           <Pressable
-            style={[styles.playBtn, active && styles.playBtnActive]}
             onPress={() => playPause(item)}
+            style={[styles.playBtn, active && styles.playBtnActive]}
           >
             <Ionicons
               name={active && isPlaying ? "pause" : "play"}
@@ -331,15 +314,15 @@ export default function MusicListScreen() {
           renderItem={renderItem}
           keyExtractor={(i) => i.id}
           contentContainerStyle={{ paddingBottom: 140 }}
-          onEndReached={() => {
-            if (!isLoadingPage && hasMore) {
-              loadPage({
-                pageToLoad: page + 1,
-                query: searchQuery,
-                replace: false,
-              });
-            }
-          }}
+          onEndReached={() =>
+            !isLoadingPage &&
+            hasMore &&
+            loadPage({
+              pageToLoad: page + 1,
+              query: searchQuery,
+              replace: false,
+            })
+          }
           onEndReachedThreshold={0.6}
           ListFooterComponent={
             isLoadingPage ? (
@@ -349,8 +332,8 @@ export default function MusicListScreen() {
         />
       )}
 
-      {/* -------- BANNER AD (POLICY SAFE) -------- */}
-      {BannerAd && BannerAdSize && (
+      {/* -------- BANNER AD -------- */}
+      {BannerAd && BannerAdSize && !isExpoGo && (
         <View style={{ alignItems: "center", paddingBottom: 6 }}>
           <BannerAd
             unitId={AD_UNIT_IDS.BANNER}
@@ -384,7 +367,7 @@ const styles = StyleSheet.create({
   },
   cardActive: { borderColor: ACCENT, borderWidth: 2 },
   title: { fontWeight: "700" },
-  actions: { flexDirection: "row", alignItems: "center", gap: 10 },
+  actions: { flexDirection: "row", gap: 10 },
   shareBtn: {
     backgroundColor: "#E2E8F0",
     width: 36,
