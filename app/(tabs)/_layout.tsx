@@ -60,33 +60,6 @@ export default function TabLayout() {
         }}
       />
 
-      <Tabs.Screen
-        name="all-music"
-        options={{
-          title: "All Music",
-          tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
-              size={focused ? 26 : 24}
-              name="music.note.list"
-              color={color}
-            />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="admin"
-        options={{
-          title: "Admin",
-          tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
-              size={focused ? 26 : 24}
-              name="square.and.arrow.up"
-              color={color}
-            />
-          ),
-        }}
-      />
 
       <Tabs.Screen
         name="profile"

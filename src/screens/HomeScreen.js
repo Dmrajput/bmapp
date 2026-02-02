@@ -1,206 +1,29 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 /* =======================
-   CATEGORY SECTIONS
+   DASHBOARD SCREEN
 ======================= */
 
-export const CATEGORY_SECTIONS = [
-  {
-    title: "Mood & Feelings",
-    data: [
-      {
-        id: "funny_comedy",
-        name: "😂 Funny / Comedy",
-        colors: ["#FDE68A", "#F59E0B"],
-      },
-      {
-        id: "sad_emotional",
-        name: "😢 Sad / Emotional",
-        colors: ["#93C5FD", "#3B82F6"],
-      },
-      {
-        id: "romantic_love",
-        name: "❤️ Romantic / Love",
-        colors: ["#F9A8D4", "#EC4899"],
-      },
-      {
-        id: "happy_feel_good",
-        name: "😊 Happy / Feel Good",
-        colors: ["#BBF7D0", "#22C55E"],
-      },
-      {
-        id: "motivational_inspiring",
-        name: "🔥 Motivational / Inspiring",
-        colors: ["#FED7AA", "#F97316"],
-      },
-      {
-        id: "suspense_tension",
-        name: "😱 Suspense / Tension",
-        colors: ["#C4B5FD", "#7C3AED"],
-      },
-      {
-        id: "cool_chill",
-        name: "😎 Cool / Chill",
-        colors: ["#A5F3FC", "#06B6D4"],
-      },
-      {
-        id: "cute_aesthetic",
-        name: "😍 Cute / Aesthetic",
-        colors: ["#FBCFE8", "#F472B6"],
-      },
-      {
-        id: "angry_intense",
-        name: "😡 Angry / Intense",
-        colors: ["#FCA5A5", "#EF4444"],
-      },
-      {
-        id: "calm_peaceful",
-        name: "😴 Calm / Peaceful",
-        colors: ["#DDD6FE", "#8B5CF6"],
-      },
-    ],
-  },
-  {
-    title: "Content Type",
-    data: [
-      {
-        id: "vlog_music",
-        name: "🎥 Vlog Music",
-        colors: ["#BAE6FD", "#0284C7"],
-      },
-      { id: "cinematic", name: "🎞️ Cinematic", colors: ["#E5E7EB", "#6B7280"] },
-      { id: "travel", name: "✈️ Travel", colors: ["#99F6E4", "#14B8A6"] },
-      {
-        id: "food_cooking",
-        name: "🍔 Food / Cooking",
-        colors: ["#FED7AA", "#FB923C"],
-      },
-      {
-        id: "storytelling",
-        name: "📖 Storytelling",
-        colors: ["#DDD6FE", "#6366F1"],
-      },
-      {
-        id: "fitness_workout",
-        name: "🏋️ Fitness / Workout",
-        colors: ["#FCA5A5", "#DC2626"],
-      },
-      {
-        id: "business_startup",
-        name: "💼 Business / Startup",
-        colors: ["#E5E7EB", "#374151"],
-      },
-      { id: "gaming", name: "🎮 Gaming", colors: ["#A7F3D0", "#10B981"] },
-      {
-        id: "kids_content",
-        name: "👶 Kids Content",
-        colors: ["#FDE68A", "#FACC15"],
-      },
-      {
-        id: "short_film_skit",
-        name: "🎭 Short Film / Skit",
-        colors: ["#C7D2FE", "#4F46E5"],
-      },
-    ],
-  },
-  {
-    title: "Music Style / Genre",
-    data: [
-      { id: "piano", name: "🎹 Piano", colors: ["#E5E7EB", "#9CA3AF"] },
-      {
-        id: "acoustic_guitar",
-        name: "🎸 Acoustic / Guitar",
-        colors: ["#FED7AA", "#EA580C"],
-      },
-      { id: "lofi", name: "🎧 Lo-Fi", colors: ["#A5B4FC", "#6366F1"] },
-      {
-        id: "hiphop_rap_beat",
-        name: "🥁 Hip-Hop / Rap Beat",
-        colors: ["#FCA5A5", "#B91C1C"],
-      },
-      {
-        id: "orchestral",
-        name: "🎼 Orchestral",
-        colors: ["#DDD6FE", "#7C3AED"],
-      },
-      { id: "jazz", name: "🎷 Jazz", colors: ["#FBCFE8", "#DB2777"] },
-      {
-        id: "electronic_edm",
-        name: "⚡ Electronic / EDM",
-        colors: ["#67E8F9", "#0891B2"],
-      },
-      {
-        id: "indian_desi_beats",
-        name: "🎻 Indian / Desi Beats",
-        colors: ["#FDE68A", "#CA8A04"],
-      },
-      { id: "rock", name: "🎸 Rock", colors: ["#D1D5DB", "#111827"] },
-      {
-        id: "spiritual_devotional",
-        name: "🕉️ Spiritual / Devotional",
-        colors: ["#FEF3C7", "#D97706"],
-      },
-    ],
-  },
-  {
-    title: "Trending & Discovery",
-    data: [
-      {
-        id: "trending_now",
-        name: "🔥 Trending Now",
-        colors: ["#F97316", "#EA580C"],
-      },
-      {
-        id: "viral_reels",
-        name: "🚀 Viral Reels",
-        colors: ["#22D3EE", "#0EA5E9"],
-      },
-      { id: "top_rated", name: "⭐ Top Rated", colors: ["#FACC15", "#EAB308"] },
-      {
-        id: "new_uploads",
-        name: "🆕 New Uploads",
-        colors: ["#86EFAC", "#22C55E"],
-      },
-      {
-        id: "intro_music",
-        name: "🎬 Intro Music",
-        colors: ["#C7D2FE", "#6366F1"],
-      },
-      {
-        id: "outro_music",
-        name: "🎬 Outro Music",
-        colors: ["#DDD6FE", "#8B5CF6"],
-      },
-    ],
-  },
-];
-
-/* =======================
-   HOME SCREEN
-======================= */
-
-export default function HomeScreen() {
+export default function DashboardScreen() {
   const router = useRouter();
-  const [searchText, setSearchText] = useState("");
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* HEADER */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Discover Music 🎧</Text>
+        <Text style={styles.headerTitle}>🎧 ReelSound</Text>
         <Text style={styles.headerSubtitle}>
-          Perfect background music for Reels & Shorts
+          Music & sounds for Reels, Shorts & Videos
         </Text>
       </View>
 
@@ -208,60 +31,132 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search mood, reels, genre..."
-            placeholderTextColor="#9CA3AF"
-            value={searchText}
-            onChangeText={setSearchText}
+        {/* PRIMARY ACTIONS */}
+        <View style={styles.primaryGrid}>
+          <DashboardCard
+            title="🔊 Sounds"
+            subtitle="Meme & effects"
+            colors={["#22C55E", "#16A34A"]}
+            onPress={() => router.push("/music-list")}
+          />
+
+          <DashboardCard
+            title="🎬 Background Music"
+            subtitle="For videos"
+            colors={["#F97316", "#EA580C"]}
+            onPress={() => router.push("/songs")}
+          />
+          <DashboardCard
+            title="🎵 Music"
+            subtitle="Songs & tracks"
+            colors={["#6366F1", "#4F46E5"]}
+            onPress={() => router.push("/music")}
           />
         </View>
 
-        {/* Category Sections */}
-        {CATEGORY_SECTIONS.map((section) => (
-          <View key={section.title} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
+        {/* TRENDING SECTION */}
+        <Section title="🔥 Trending Now">
+          <HorizontalCard
+            title="Viral Reels Music"
+            onPress={() =>
+              router.push({ pathname: "/music", params: { tag: "viral" } })
+            }
+          />
+          <HorizontalCard
+            title="Top Meme Sounds"
+            onPress={() => router.push("/songs")}
+          />
+        </Section>
 
-            <View style={styles.gridContainer}>
-              {section.data.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  activeOpacity={0.85}
-                  style={styles.categoryCard}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/music/[category]",
-                      params: { category: category.id },
-                    })
-                  }
-                >
-                  <LinearGradient
-                    colors={category.colors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.gradientBox}
-                  >
-                    <Text style={styles.categoryName}>{category.name}</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              ))}
-            </View>
+        {/* USE CASES */}
+        <Section title="🎥 Use Cases">
+          <View style={styles.useCaseGrid}>
+            <MiniCard
+              title="Reels & Shorts"
+              onPress={() =>
+                router.push({ pathname: "/music", params: { tag: "reels" } })
+              }
+            />
+            <MiniCard
+              title="Vlogs"
+              onPress={() =>
+                router.push({
+                  pathname: "/meme-sound",
+                  params: { tag: "vlog" },
+                })
+              }
+            />
+            <MiniCard title="Gaming" onPress={() => router.push("/songs")} />
+            <MiniCard title="Comedy" onPress={() => router.push("/songs")} />
           </View>
-        ))}
+        </Section>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+/* =======================
+   COMPONENTS
+======================= */
+
+function DashboardCard({ title, subtitle, colors, onPress }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      style={styles.bigCard}
+      onPress={onPress}
+    >
+      <LinearGradient colors={colors} style={styles.bigCardGradient}>
+        <Text style={styles.bigCardTitle}>{title}</Text>
+        <Text style={styles.bigCardSubtitle}>{subtitle}</Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+function HorizontalCard({ title, onPress }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      style={styles.horizontalCard}
+    >
+      <Text style={styles.horizontalText}>{title}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function MiniCard({ title, onPress }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      style={styles.miniCard}
+      onPress={onPress}
+    >
+      <Text style={styles.miniText}>{title}</Text>
+    </TouchableOpacity>
+  );
+}
+
+/* =======================
+   STYLES
+======================= */
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB", // light background
+    backgroundColor: "#F8FAFC",
   },
 
-  /* Header */
   header: {
     paddingHorizontal: 16,
     paddingTop: 20,
@@ -278,73 +173,86 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
 
-  /* Scroll */
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 40,
   },
 
-  /* Search */
-  searchContainer: {
-    marginVertical: 18,
-  },
-  searchInput: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    fontSize: 15,
-    color: "#111827",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+  /* PRIMARY GRID */
+  primaryGrid: {
+    marginTop: 10,
+    gap: 16,
   },
 
-  /* Section */
+  bigCard: {
+    borderRadius: 22,
+    overflow: "hidden",
+    elevation: 4,
+  },
+  bigCardGradient: {
+    padding: 22,
+    height: 110,
+    justifyContent: "space-between",
+    borderRadius: 22,
+  },
+  bigCardTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  bigCardSubtitle: {
+    fontSize: 14,
+    color: "#E5E7EB",
+  },
+
+  /* SECTIONS */
   section: {
-    marginBottom: 30,
+    marginTop: 30,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
     marginBottom: 14,
+    color: "#111827",
   },
 
-  /* Grid */
-  gridContainer: {
+  /* HORIZONTAL */
+  horizontalCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  horizontalText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#111827",
+  },
+
+  /* MINI GRID */
+  useCaseGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
   },
-
-  /* Cards */
-  categoryCard: {
+  miniCard: {
     width: "48%",
-    marginBottom: 18,
-    borderRadius: 18,
-    overflow: "hidden",
     backgroundColor: "#FFFFFF",
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 14,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  gradientBox: {
-    height: 130,
-    padding: 16,
-    justifyContent: "flex-end",
-    borderRadius: 18,
-  },
-  categoryName: {
-    fontSize: 15,
-    fontWeight: "700",
+  miniText: {
+    fontSize: 14,
+    fontWeight: "600",
     color: "#111827",
-    lineHeight: 20,
   },
 });

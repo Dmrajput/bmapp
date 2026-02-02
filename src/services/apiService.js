@@ -40,6 +40,47 @@ const apiService = {
   },
 
   /**
+   * Fetch audio with pagination + search
+   * @param {Object} params
+   * @param {number} params.page - Page number
+   * @param {number} params.limit - Page size
+   * @param {string} params.query - Search text
+   * @returns {Promise<{data:Array, meta:Object}>}
+   */
+  fetchAllAudioPaged: async ({ page = 1, limit = 20, query = "" } = {}) => {
+    try {
+      const qs = new URLSearchParams();
+      qs.set("page", String(page));
+      qs.set("limit", String(limit));
+      if (query) qs.set("q", query);
+
+      const response = await fetch(`${API_BASE_URL}/audio?${qs.toString()}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        return {
+          data: Array.isArray(result.data) ? result.data : [result.data],
+          meta: result.meta || {},
+        };
+      }
+
+      return { data: [], meta: result.meta || {} };
+    } catch (error) {
+      console.error("❌ Error fetching paged audio:", error);
+      return { data: [], meta: {} };
+    }
+  },
+
+  /**
    * Fetch audio by category
    * @param {string} category - Category name
    * @returns {Promise<Array>} Array of audio objects in category
@@ -152,6 +193,25 @@ const apiService = {
       apiService.transformAudioData(audio),
     );
     return formatted;
+  },
+
+  /**
+   * Fetch and transform paged audio data
+   * @param {Object} params
+   * @returns {Promise<{data:Array, meta:Object}>}
+   */
+  fetchFormattedAudioPaged: async ({
+    page = 1,
+    limit = 20,
+    query = "",
+  } = {}) => {
+    const result = await apiService.fetchAllAudioPaged({ page, limit, query });
+    return {
+      data: (result.data || []).map((audio) =>
+        apiService.transformAudioData(audio),
+      ),
+      meta: result.meta || {},
+    };
   },
 
   /**

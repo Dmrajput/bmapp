@@ -2,9 +2,13 @@ import { useFavorites } from "@/context/favorites-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
-import * as MediaLibrary from "expo-media-library";
-import React, { useCallback, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useRef,
+  useState,
+  useMemo,
+  useEffect,
+} from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,224 +17,214 @@ import {
   StyleSheet,
   Text,
   View,
+  Share,
+  Animated,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import apiService from "../services/apiService";
 
-export default function AllMusicScreen() {
+/* ---------------- SOUND WAVE BUTTON ---------------- */
+function PlayWaveButton({ playing, onPress, disabled }) {
+  const bar1 = useRef(new Animated.Value(6)).current;
+  const bar2 = useRef(new Animated.Value(10)).current;
+  const bar3 = useRef(new Animated.Value(8)).current;
+
+  useEffect(() => {
+    let loop;
+    if (playing) {
+      loop = Animated.loop(
+        Animated.stagger(120, [
+          Animated.sequence([
+            Animated.timing(bar1, { toValue: 18, duration: 260, useNativeDriver: false }),
+            Animated.timing(bar1, { toValue: 6, duration: 260, useNativeDriver: false }),
+          ]),
+          Animated.sequence([
+            Animated.timing(bar2, { toValue: 22, duration: 260, useNativeDriver: false }),
+            Animated.timing(bar2, { toValue: 10, duration: 260, useNativeDriver: false }),
+          ]),
+          Animated.sequence([
+            Animated.timing(bar3, { toValue: 16, duration: 260, useNativeDriver: false }),
+            Animated.timing(bar3, { toValue: 8, duration: 260, useNativeDriver: false }),
+          ]),
+        ])
+      );
+      loop.start();
+    } else {
+      bar1.setValue(6);
+      bar2.setValue(10);
+      bar3.setValue(8);
+    }
+    return () => loop?.stop();
+  }, [playing]);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.playBtn,
+        playing && styles.playBtnActive,
+        pressed && !disabled && styles.btnPressed,
+      ]}
+    >
+      {playing ? (
+        <View style={styles.waveContainer}>
+          <Animated.View style={[styles.waveBar, { height: bar1 }]} />
+          <Animated.View style={[styles.waveBar, { height: bar2 }]} />
+          <Animated.View style={[styles.waveBar, { height: bar3 }]} />
+        </View>
+      ) : (
+        <Ionicons name="play" size={20} color="#fff" />
+      )}
+    </Pressable>
+  );
+}
+
+/* ---------------- ACTION BUTTON ---------------- */
+function ActionButton({ icon, liked, onPress }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.iconBtn,
+        liked && styles.iconBtnLiked,
+        pressed && styles.btnPressed,
+      ]}
+    >
+      <Ionicons
+        name={icon}
+        size={18}
+        color={liked ? "#EF4444" : "#475569"}
+      />
+    </Pressable>
+  );
+}
+
+export default function MemeSoundsScreen() {
   const { toggleFavorite, isFavorite } = useFavorites();
 
-  const [musicList, setMusicList] = useState([]);
-  const [recentlyPlayed, setRecentlyPlayed] = useState([]);
+  const [soundList, setSoundList] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [currentTrackId, setCurrentTrackId] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingSound, setIsLoadingSound] = useState(false);
-  const [playbackPositionMillis, setPlaybackPositionMillis] = useState(0);
-  const [playbackDurationMillis, setPlaybackDurationMillis] = useState(0);
-
-  const [downloadingId, setDownloadingId] = useState(null);
 
   const soundRef = useRef(null);
 
-  /* ---------------- HELPERS ---------------- */
-  const shuffleList = (list) => {
-    const copy = [...list];
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-  };
+  /* ---------------- FILTER ---------------- */
+  const filteredList = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return soundList;
+    return soundList.filter(
+      (i) =>
+        i.title?.toLowerCase().includes(q) ||
+        i.tags?.some((t) => t.toLowerCase().includes(q))
+    );
+  }, [soundList, searchQuery]);
 
-  const formatTime = (millis) => {
-    const totalSeconds = Math.floor((millis || 0) / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
-
-  /* ---------------- DOWNLOAD AUDIO ---------------- */
-  const downloadAudio = async (item) => {
+  /* ---------------- SHARE ---------------- */
+  const useSound = async (item) => {
     try {
-      setDownloadingId(item.id);
-
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert("Permission Required", "Please allow storage permission");
-        return;
-      }
-
-      const safeName = item.title.replace(/[^a-zA-Z0-9]/g, "_");
-      const tempUri = FileSystem.cacheDirectory + `${safeName}.mp3`;
-
-      const download = FileSystem.createDownloadResumable(item.uri, tempUri);
-
-      const { uri } = await download.downloadAsync();
-
-      const asset = await MediaLibrary.createAssetAsync(uri);
-
-      let album = await MediaLibrary.getAlbumAsync("Download");
-      if (!album) {
-        await MediaLibrary.createAlbumAsync("Download", asset, false);
-      } else {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-      }
-
-      Alert.alert("Downloaded ✅", "Saved to Downloads folder");
-    } catch (err) {
-      console.log("❌ Download error:", err);
-      Alert.alert("Download Failed", "Please try again");
-    } finally {
-      setDownloadingId(null);
+      await Share.share({ message: item.uri });
+    } catch {
+      Alert.alert("Unable to share");
     }
   };
 
-  /* ---------------- AUDIO CONTROL ---------------- */
-  const unloadSound = useCallback(async () => {
+  /* ---------------- STOP AUDIO ---------------- */
+  const stopSound = useCallback(async () => {
     if (soundRef.current) {
-      try {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-      } catch {}
+      await soundRef.current.stopAsync();
+      await soundRef.current.unloadAsync();
       soundRef.current = null;
     }
     setCurrentTrackId(null);
     setIsPlaying(false);
-    setPlaybackPositionMillis(0);
-    setPlaybackDurationMillis(0);
   }, []);
 
+  /* ---------------- PLAY / PAUSE ---------------- */
   const playPause = useCallback(
     async (item) => {
+      if (isLoadingSound) return;
       setIsLoadingSound(true);
       try {
         if (currentTrackId === item.id && soundRef.current) {
-          if (isPlaying) {
-            await soundRef.current.pauseAsync();
-            setIsPlaying(false);
-          } else {
-            await soundRef.current.playAsync();
-            setIsPlaying(true);
-          }
+          isPlaying
+            ? await soundRef.current.pauseAsync()
+            : await soundRef.current.playAsync();
+          setIsPlaying(!isPlaying);
           return;
         }
 
-        await unloadSound();
-
+        await stopSound();
         const { sound } = await Audio.Sound.createAsync(
           { uri: item.uri },
-          { shouldPlay: true },
+          { shouldPlay: true }
         );
 
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (!status.isLoaded) return;
-          setPlaybackPositionMillis(status.positionMillis || 0);
-          setPlaybackDurationMillis(status.durationMillis || 0);
+        sound.setOnPlaybackStatusUpdate((s) => {
+          if (s.didJustFinish) stopSound();
         });
 
         soundRef.current = sound;
         setCurrentTrackId(item.id);
         setIsPlaying(true);
-
-        setRecentlyPlayed((prev) => {
-          const filtered = prev.filter((i) => i.id !== item.id);
-          return [item, ...filtered].slice(0, 8);
-        });
-      } catch (err) {
-        setErrorMessage("Audio failed to load");
       } finally {
         setIsLoadingSound(false);
       }
     },
-    [currentTrackId, isPlaying, unloadSound],
+    [currentTrackId, isPlaying, isLoadingSound, stopSound]
   );
 
-  /* ---------------- DATA FETCH ---------------- */
+  /* ---------------- FETCH ---------------- */
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      const load = async () => {
-        setIsLoadingData(true);
-        try {
-          const data = await apiService.fetchFormattedAudio();
-          if (active) setMusicList(shuffleList(data));
-        } catch {
-          if (active) setErrorMessage("Unable to load music");
-        } finally {
-          if (active) setIsLoadingData(false);
+      apiService.fetchFormattedAudio().then((data) => {
+        if (active) {
+          setSoundList(data);
+          setIsLoadingData(false);
         }
-      };
-      load();
+      });
       return () => {
         active = false;
-        unloadSound();
+        stopSound();
       };
-    }, [unloadSound]),
+    }, [stopSound])
   );
 
   /* ---------------- RENDER ITEM ---------------- */
   const renderItem = ({ item }) => {
     const active = currentTrackId === item.id;
-    const favorite = isFavorite(item.id);
+    const playing = active && isPlaying;
+    const liked = isFavorite(item.id);
 
     return (
       <View style={[styles.card, active && styles.cardActive]}>
-        <View style={styles.cardLeft}>
-          <Text style={styles.title} numberOfLines={1}>
-            {item.title}
-          </Text>
-          <Text style={styles.meta}>{item.category}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {item.title}
+        </Text>
 
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${
-                    active && playbackDurationMillis
-                      ? (playbackPositionMillis / playbackDurationMillis) * 100
-                      : 0
-                  }%`,
-                },
-              ]}
-            />
-          </View>
-        </View>
+        <PlayWaveButton
+          playing={playing}
+          disabled={isLoadingSound}
+          onPress={() => playPause(item)}
+        />
 
-        <View style={styles.cardActions}>
-          {/* DOWNLOAD */}
-          <Pressable onPress={() => downloadAudio(item)}>
-            {downloadingId === item.id ? (
-              <ActivityIndicator size="small" color="#6366f1" />
-            ) : (
-              <Ionicons name="download-outline" size={20} color="#6b7280" />
-            )}
-          </Pressable>
+        <View style={styles.actions}>
+          <ActionButton
+            icon="share-social-outline"
+            onPress={() => useSound(item)}
+          />
 
-          {/* FAVORITE */}
-          <Pressable onPress={() => toggleFavorite(item)}>
-            <Ionicons
-              name={favorite ? "heart" : "heart-outline"}
-              size={20}
-              color={favorite ? "#ec4899" : "#9ca3af"}
-            />
-          </Pressable>
-
-          {/* PLAY */}
-          <Pressable style={styles.playBtn} onPress={() => playPause(item)}>
-            {isLoadingSound && active ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Ionicons
-                name={active && isPlaying ? "pause" : "play"}
-                size={18}
-                color="#fff"
-              />
-            )}
-          </Pressable>
+          <ActionButton
+            icon={liked ? "heart" : "heart-outline"}
+            liked={liked}
+            onPress={() => toggleFavorite(item)}
+          />
         </View>
       </View>
     );
@@ -238,16 +232,31 @@ export default function AllMusicScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>All Music</Text>
+      <Text style={styles.header}>🎧 Meme Sounds</Text>
+      <Text style={styles.subHeader}>Tap. Listen. Laugh.</Text>
+
+      {/* SEARCH */}
+      <View style={styles.searchBox}>
+        <Ionicons name="search" size={18} color="#64748B" />
+        <TextInput
+          placeholder="Search funny sounds…"
+          placeholderTextColor="#94A3B8"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchInput}
+        />
+      </View>
 
       {isLoadingData ? (
-        <ActivityIndicator size="large" color="#6366f1" />
+        <ActivityIndicator size="large" color="#6366F1" />
+      ) : filteredList.length === 0 ? (
+        <Text style={styles.emptyText}>No sounds found 😕</Text>
       ) : (
         <FlatList
-          data={musicList}
-          keyExtractor={(item) => item.id}
+          data={filteredList}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 16 }}
+          numColumns={2}
+          contentContainerStyle={{ padding: 12, paddingBottom: 100 }}
         />
       )}
     </SafeAreaView>
@@ -256,36 +265,111 @@ export default function AllMusicScreen() {
 
 /* ---------------- STYLES ---------------- */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
-  header: { fontSize: 22, fontWeight: "800", padding: 16 },
-  card: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 14,
+  container: { flex: 1, backgroundColor: "#F1F5F9" },
+
+  header: {
+    fontSize: 26,
+    fontWeight: "800",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  subHeader: {
+    fontSize: 13,
+    color: "#64748B",
+    paddingHorizontal: 16,
     marginBottom: 12,
+  },
+
+  searchBox: {
+    flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    marginBottom: 14,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    height: 46,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  cardActive: { borderColor: "#6366f1" },
-  cardLeft: { flex: 1 },
-  title: { fontSize: 14, fontWeight: "700" },
-  meta: { fontSize: 12, color: "#6b7280" },
-  progressBar: {
-    height: 4,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 4,
-    marginTop: 8,
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 14,
+    color: "#0F172A",
   },
-  progressFill: { height: 4, backgroundColor: "#6366f1" },
-  cardActions: { alignItems: "center", gap: 10 },
+
+  card: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 22,
+    margin: 8,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  cardActive: { backgroundColor: "#EEF2FF" },
+
+  title: {
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+
   playBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "#6366f1",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#174072",
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 10,
+  },
+  playBtnActive: { backgroundColor: "#6366F1" },
+
+  waveContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  waveBar: {
+    width: 4,
+    borderRadius: 2,
+    backgroundColor: "#FFFFFF",
+  },
+
+  actions: {
+    flexDirection: "row",
+    gap: 18,
+  },
+
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  iconBtnLiked: {
+    backgroundColor: "#FEE2E2", // soft red background
+  },
+
+  btnPressed: {
+    transform: [{ scale: 0.92 }],
+    opacity: 0.8,
+  },
+
+  emptyText: {
+    textAlign: "center",
+    color: "#64748B",
+    marginTop: 40,
+    fontSize: 14,
   },
 });

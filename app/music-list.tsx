@@ -1,6 +1,6 @@
-import React from 'react';
-import { useLocalSearchParams } from 'expo-router';
-import MusicListScreen from '../src/screens/MusicListScreen';
+import { useLocalSearchParams } from "expo-router";
+import React from "react";
+import MusicListScreen from "../src/screens/MusicListScreen";
 
 export default function MusicListRoute() {
   const params = useLocalSearchParams();
