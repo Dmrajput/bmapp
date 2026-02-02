@@ -69,7 +69,7 @@ export default function DashboardScreen() {
         </Section>
 
         {/* USE CASES */}
-        <Section title="🎥 Use Cases">
+        {/* <Section title="🎥 Use Cases">
           <View style={styles.useCaseGrid}>
             <MiniCard
               title="Reels & Shorts"
@@ -89,7 +89,7 @@ export default function DashboardScreen() {
             <MiniCard title="Gaming" onPress={() => router.push("/songs")} />
             <MiniCard title="Comedy" onPress={() => router.push("/songs")} />
           </View>
-        </Section>
+        </Section> */}
       </ScrollView>
     </SafeAreaView>
   );
