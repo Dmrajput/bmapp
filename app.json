@@ -21,10 +21,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.divyaraj_padhiyar.ReelSound",
-      "permissions": [
-        "INTERNET",
-        "READ_MEDIA_AUDIO"
-      ]
+      "permissions": ["INTERNET", "READ_MEDIA_AUDIO"]
     },
     "web": {
       "output": "static",
@@ -36,7 +33,7 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713"
+          "androidAppId": "ca-app-pub-2136043836079463~9890171450"
         }
       ],
       [
