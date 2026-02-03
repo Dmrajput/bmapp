@@ -20,7 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.divyaraj_padhiyar.ReelSound",
+      "package": "com.divyaraj_padhiyar.reelsound.v2",
       "permissions": ["INTERNET", "READ_MEDIA_AUDIO"]
     },
     "web": {
