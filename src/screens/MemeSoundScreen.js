@@ -4,16 +4,16 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Audio } from "expo-av";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-	ActivityIndicator,
-	Alert,
-	Animated,
-	FlatList,
-	Pressable,
-	Share,
-	StyleSheet,
-	Text,
-	TextInput,
-	View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  FlatList,
+  Pressable,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import apiService from "../services/apiService";

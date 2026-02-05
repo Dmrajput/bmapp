@@ -1,6 +1,6 @@
 import express from "express";
 import {
-  getAllAudio,
+  getAudio,
   getAudioByCategory,
   getAudioById,
   uploadAudio,
@@ -18,7 +18,7 @@ const router = express.Router();
 router.post("/upload", uploadFields, uploadAudio);
 
 // GET /api/audio - Get all audio files
-router.get("/", getAllAudio);
+router.get("/", getAudio);
 
 // GET /api/audio/category/:category - Get audio by category
 router.get("/category/:category", getAudioByCategory);

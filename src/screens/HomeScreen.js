@@ -62,10 +62,10 @@ export default function DashboardScreen() {
               router.push({ pathname: "/music", params: { tag: "viral" } })
             }
           />
-          <HorizontalCard
+          {/* <HorizontalCard
             title="Top Meme Sounds"
             onPress={() => router.push("/songs")}
-          />
+          /> */}
         </Section>
 
         {/* USE CASES */}

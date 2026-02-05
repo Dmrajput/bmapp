@@ -4,16 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Audio } from "expo-av";
 import Constants from "expo-constants";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   FlatList,
   Pressable,
@@ -25,6 +18,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import apiService from "../services/apiService";
+
+const PAGE_SIZE = 20;
 
 /* ================= ADMOB CONFIG ================= */
 const isExpoGo =
@@ -45,12 +40,10 @@ if (!isExpoGo) {
     InterstitialAd = ads.InterstitialAd;
     mobileAds = ads.mobileAds;
     AdEventType = ads.AdEventType;
-  } catch {
-    console.log("⚠️ AdMob not available");
-  }
+  } catch {}
 }
 
-/* ---------------- SOUND WAVE BUTTON ---------------- */
+/* ---------------- WAVE BUTTON ---------------- */
 function PlayWaveButton({ playing, onPress, disabled }) {
   const bar1 = useRef(new Animated.Value(6)).current;
   const bar2 = useRef(new Animated.Value(10)).current;
@@ -60,40 +53,40 @@ function PlayWaveButton({ playing, onPress, disabled }) {
     let loop;
     if (playing) {
       loop = Animated.loop(
-        Animated.stagger(120, [
+        Animated.stagger(150, [
           Animated.sequence([
             Animated.timing(bar1, {
               toValue: 18,
-              duration: 260,
+              duration: 300,
               useNativeDriver: false,
             }),
             Animated.timing(bar1, {
               toValue: 6,
-              duration: 260,
+              duration: 300,
               useNativeDriver: false,
             }),
           ]),
           Animated.sequence([
             Animated.timing(bar2, {
               toValue: 22,
-              duration: 260,
+              duration: 300,
               useNativeDriver: false,
             }),
             Animated.timing(bar2, {
               toValue: 10,
-              duration: 260,
+              duration: 300,
               useNativeDriver: false,
             }),
           ]),
           Animated.sequence([
             Animated.timing(bar3, {
               toValue: 16,
-              duration: 260,
+              duration: 300,
               useNativeDriver: false,
             }),
             Animated.timing(bar3, {
               toValue: 8,
-              duration: 260,
+              duration: 300,
               useNativeDriver: false,
             }),
           ]),
@@ -110,12 +103,12 @@ function PlayWaveButton({ playing, onPress, disabled }) {
 
   return (
     <Pressable
-      onPress={onPress}
       disabled={disabled}
+      onPress={onPress}
       style={({ pressed }) => [
-        styles.playBtn,
-        playing && styles.playBtnActive,
-        pressed && !disabled && styles.btnPressed,
+        styles.waveBtn,
+        playing && styles.waveBtnActive,
+        pressed && styles.btnPressed,
       ]}
     >
       {playing ? (
@@ -125,24 +118,24 @@ function PlayWaveButton({ playing, onPress, disabled }) {
           <Animated.View style={[styles.waveBar, { height: bar3 }]} />
         </View>
       ) : (
-        <Ionicons name="play" size={20} color="#fff" />
+        <Ionicons name="play" size={18} color="#fff" />
       )}
     </Pressable>
   );
 }
 
 /* ---------------- ACTION BUTTON ---------------- */
-function ActionButton({ icon, liked, onPress }) {
+function ActionButton({ icon, color, bg, onPress }) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        styles.iconBtn,
-        liked && styles.iconBtnLiked,
+        styles.actionBtn,
+        { backgroundColor: bg },
         pressed && styles.btnPressed,
       ]}
     >
-      <Ionicons name={icon} size={18} color={liked ? "#EF4444" : "#475569"} />
+      <Ionicons name={icon} size={18} color={color} />
     </Pressable>
   );
 }
@@ -151,8 +144,12 @@ export default function MemeSoundsScreen() {
   const { toggleFavorite, isFavorite } = useFavorites();
 
   const [soundList, setSoundList] = useState([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [type, setType] = useState("sound"); // 👈 type filter
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [loadingPage, setLoadingPage] = useState(false);
 
   const [currentTrackId, setCurrentTrackId] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -168,58 +165,58 @@ export default function MemeSoundsScreen() {
     mobileAds().initialize();
   }, []);
 
-  /* -------- LOAD INTERSTITIAL -------- */
   const loadInterstitial = useCallback(() => {
-    if (!InterstitialAd || isExpoGo || !AdEventType) return;
-
-    const ad = InterstitialAd.createForAdRequest(AD_UNIT_IDS.INTERSTITIAL, {
-      requestNonPersonalizedAdsOnly: true,
-    });
-
+    if (!InterstitialAd || isExpoGo) return;
+    const ad = InterstitialAd.createForAdRequest(AD_UNIT_IDS.INTERSTITIAL);
     ad.addAdEventListener(AdEventType.LOADED, () => {
       interstitialRef.current = ad;
     });
-
     ad.load();
   }, []);
 
-  useEffect(() => {
-    loadInterstitial();
-  }, [loadInterstitial]);
+  useEffect(() => loadInterstitial(), [loadInterstitial]);
 
-  const showInterstitialAd = useCallback(() => {
-    if (!interstitialRef.current || isExpoGo) return;
-
+  const showInterstitial = () => {
     playCountRef.current += 1;
-
-    if (playCountRef.current % 10 === 0) {
+    if (playCountRef.current % 10 === 0 && interstitialRef.current) {
       interstitialRef.current.show();
       interstitialRef.current = null;
       loadInterstitial();
     }
-  }, [loadInterstitial]);
-
-  /* -------- FILTER -------- */
-  const filteredList = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return soundList;
-    return soundList.filter(
-      (i) =>
-        i.title?.toLowerCase().includes(q) ||
-        i.tags?.some((t) => t.toLowerCase().includes(q)),
-    );
-  }, [soundList, searchQuery]);
-
-  /* -------- SHARE -------- */
-  const useSound = async (item) => {
-    try {
-      await Share.share({ message: item.uri });
-    } catch {
-      Alert.alert("Unable to share");
-    }
   };
 
-  /* -------- STOP AUDIO -------- */
+  /* -------- FETCH PAGE -------- */
+  const loadPage = useCallback(
+    async ({ pageToLoad, replace }) => {
+      replace ? setLoading(true) : setLoadingPage(true);
+
+      try {
+        const res = await apiService.fetchFormattedAudioPaged({
+          page: pageToLoad,
+          limit: PAGE_SIZE,
+          query: searchQuery,
+          type,
+        });
+
+        setSoundList((prev) => (replace ? res.data : [...prev, ...res.data]));
+        setHasMore(res.meta?.hasMore ?? res.data.length === PAGE_SIZE);
+        setPage(pageToLoad);
+      } finally {
+        setLoading(false);
+        setLoadingPage(false);
+      }
+    },
+    [searchQuery, type],
+  );
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      loadPage({ pageToLoad: 1, replace: true });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery, type, loadPage]);
+
+  /* -------- AUDIO -------- */
   const stopSound = useCallback(async () => {
     if (soundRef.current) {
       await soundRef.current.stopAsync();
@@ -230,86 +227,70 @@ export default function MemeSoundsScreen() {
     setIsPlaying(false);
   }, []);
 
-  /* -------- PLAY / PAUSE -------- */
-  const playPause = useCallback(
-    async (item) => {
-      if (isLoadingSound) return;
-      setIsLoadingSound(true);
+  const playPause = async (item) => {
+    if (isLoadingSound) return;
+    setIsLoadingSound(true);
 
-      try {
-        if (currentTrackId === item.id && soundRef.current) {
-          isPlaying
-            ? await soundRef.current.pauseAsync()
-            : await soundRef.current.playAsync();
-          setIsPlaying(!isPlaying);
-          return;
-        }
-
-        await stopSound();
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: item.uri },
-          { shouldPlay: true },
-        );
-
-        sound.setOnPlaybackStatusUpdate((s) => {
-          if (s.didJustFinish) stopSound();
-        });
-
-        soundRef.current = sound;
-        setCurrentTrackId(item.id);
-        setIsPlaying(true);
-
-        showInterstitialAd();
-      } finally {
-        setIsLoadingSound(false);
+    try {
+      if (currentTrackId === item.id && soundRef.current) {
+        isPlaying
+          ? await soundRef.current.pauseAsync()
+          : await soundRef.current.playAsync();
+        setIsPlaying(!isPlaying);
+        return;
       }
-    },
-    [currentTrackId, isPlaying, isLoadingSound, stopSound, showInterstitialAd],
-  );
 
-  /* -------- FETCH -------- */
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      apiService.fetchFormattedAudio().then((data) => {
-        if (active) {
-          setSoundList(data);
-          setIsLoadingData(false);
-        }
+      await stopSound();
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: item.uri },
+        { shouldPlay: true },
+      );
+
+      sound.setOnPlaybackStatusUpdate((s) => {
+        if (s.didJustFinish) stopSound();
       });
-      return () => {
-        active = false;
-        stopSound();
-      };
-    }, [stopSound]),
-  );
 
-  /* -------- RENDER -------- */
+      soundRef.current = sound;
+      setCurrentTrackId(item.id);
+      setIsPlaying(true);
+      showInterstitial();
+    } finally {
+      setIsLoadingSound(false);
+    }
+  };
+
+  useFocusEffect(useCallback(() => () => stopSound(), [stopSound]));
+
+  /* -------- RENDER ITEM -------- */
   const renderItem = ({ item }) => {
     const active = currentTrackId === item.id;
-    const playing = active && isPlaying;
-    const liked = isFavorite(item.id);
+    const fav = isFavorite(item.id);
 
     return (
       <View style={[styles.card, active && styles.cardActive]}>
         <Text style={styles.title} numberOfLines={1}>
           {item.title}
         </Text>
-
-        <PlayWaveButton
-          playing={playing}
-          disabled={isLoadingSound}
-          onPress={() => playPause(item)}
-        />
+        <Text style={styles.duration}>{item.duration || 5}s</Text>
 
         <View style={styles.actions}>
+          <PlayWaveButton
+            playing={active && isPlaying}
+            disabled={isLoadingSound}
+            onPress={() => playPause(item)}
+          />
+
           <ActionButton
             icon="share-social-outline"
-            onPress={() => useSound(item)}
+            color="#6366F1"
+            bg="#EEF2FF"
+            onPress={() => Share.share({ message: item.uri })}
           />
+
           <ActionButton
-            icon={liked ? "heart" : "heart-outline"}
-            liked={liked}
+            icon={fav ? "heart" : "heart-outline"}
+            color={fav ? "#EC4899" : "#6B7280"}
+            bg={fav ? "#FCE7F3" : "#F1F5F9"}
             onPress={() => toggleFavorite(item)}
           />
         </View>
@@ -319,39 +300,44 @@ export default function MemeSoundsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>🎧 Meme Sounds</Text>
-      <Text style={styles.subHeader}>Tap. Listen. Laugh.</Text>
+      <Text style={styles.header}>Meme Sounds</Text>
 
       <View style={styles.searchBox}>
-        <Ionicons name="search" size={18} color="#64748B" />
+        <Ionicons name="search" size={18} color="#6B7280" />
         <TextInput
-          placeholder="Search funny sounds…"
-          placeholderTextColor="#94A3B8"
+          placeholder="Search sounds..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={styles.searchInput}
         />
       </View>
 
-      {isLoadingData ? (
+      {loading ? (
         <ActivityIndicator size="large" color="#6366F1" />
       ) : (
         <FlatList
-          data={filteredList}
+          data={soundList}
           renderItem={renderItem}
           numColumns={2}
-          contentContainerStyle={{ padding: 12, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: 12, paddingBottom: 90 }}
+          onEndReached={() => {
+            if (!loadingPage && hasMore) {
+              loadPage({ pageToLoad: page + 1, replace: false });
+            }
+          }}
+          onEndReachedThreshold={0.6}
+          ListFooterComponent={
+            loadingPage ? (
+              <ActivityIndicator size="small" color="#6366F1" />
+            ) : null
+          }
         />
       )}
 
       {/* -------- BANNER AD -------- */}
-      {BannerAd && BannerAdSize && !isExpoGo && (
+      {BannerAd && !isExpoGo && (
         <View style={{ alignItems: "center", paddingBottom: 6 }}>
-          <BannerAd
-            unitId={AD_UNIT_IDS.BANNER}
-            size={BannerAdSize.BANNER}
-            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-          />
+          <BannerAd unitId={AD_UNIT_IDS.BANNER} size={BannerAdSize.BANNER} />
         </View>
       )}
     </SafeAreaView>
@@ -360,50 +346,65 @@ export default function MemeSoundsScreen() {
 
 /* ---------------- STYLES ---------------- */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F1F5F9" },
-  header: { fontSize: 26, fontWeight: "800", padding: 16 },
-  subHeader: { fontSize: 13, color: "#64748B", paddingHorizontal: 16 },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  header: { fontSize: 22, fontWeight: "800", padding: 16 },
+
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    margin: 16,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-    height: 46,
+    backgroundColor: "#FFF",
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    height: 44,
   },
-  searchInput: { flex: 1, marginLeft: 10 },
+  searchInput: { flex: 1, marginLeft: 8 },
+
   card: {
     flex: 1,
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 22,
-    margin: 8,
-    alignItems: "center",
+    backgroundColor: "#FFF",
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    margin: 6,
   },
-  cardActive: { backgroundColor: "#EEF2FF" },
-  title: { fontWeight: "700", marginBottom: 10 },
-  playBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#174072",
+  cardActive: {
+    backgroundColor: "#EEF2FF",
+    borderColor: "#6366F1",
+  },
+
+  title: { fontSize: 14, fontWeight: "700" },
+  duration: { fontSize: 12, color: "#6B7280", marginTop: 4 },
+
+  actions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 14,
+  },
+
+  waveBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: "#CBD5E1",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
   },
-  playBtnActive: { backgroundColor: "#6366F1" },
-  waveContainer: { flexDirection: "row", gap: 4 },
-  waveBar: { width: 4, backgroundColor: "#fff", borderRadius: 2 },
-  actions: { flexDirection: "row", gap: 18 },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F1F5F9",
+  waveBtnActive: { backgroundColor: "#6366F1" },
+
+  waveContainer: { flexDirection: "row", gap: 3 },
+  waveBar: { width: 4, borderRadius: 2, backgroundColor: "#FFF" },
+
+  actionBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
-  iconBtnLiked: { backgroundColor: "#FEE2E2" },
-  btnPressed: { transform: [{ scale: 0.92 }], opacity: 0.8 },
+  btnPressed: { transform: [{ scale: 0.92 }], opacity: 0.85 },
 });

@@ -45,14 +45,21 @@ const apiService = {
    * @param {number} params.page - Page number
    * @param {number} params.limit - Page size
    * @param {string} params.query - Search text
+   * @param {string} params.type - Audio type filter
    * @returns {Promise<{data:Array, meta:Object}>}
    */
-  fetchAllAudioPaged: async ({ page = 1, limit = 20, query = "" } = {}) => {
+  fetchAllAudioPaged: async ({
+    page = 1,
+    limit = 20,
+    query = "",
+    type = "",
+  } = {}) => {
     try {
       const qs = new URLSearchParams();
       qs.set("page", String(page));
       qs.set("limit", String(limit));
       if (query) qs.set("q", query);
+      if (type) qs.set("type", type);
 
       const response = await fetch(`${API_BASE_URL}/audio?${qs.toString()}`, {
         method: "GET",
@@ -198,14 +205,21 @@ const apiService = {
   /**
    * Fetch and transform paged audio data
    * @param {Object} params
+   * @param {string} params.type - Audio type filter
    * @returns {Promise<{data:Array, meta:Object}>}
    */
   fetchFormattedAudioPaged: async ({
     page = 1,
     limit = 20,
     query = "",
+    type = "",
   } = {}) => {
-    const result = await apiService.fetchAllAudioPaged({ page, limit, query });
+    const result = await apiService.fetchAllAudioPaged({
+      page,
+      limit,
+      query,
+      type,
+    });
     return {
       data: (result.data || []).map((audio) =>
         apiService.transformAudioData(audio),

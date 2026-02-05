@@ -147,7 +147,7 @@ export const uploadAudio = async (req, res) => {
 };
 
 // Get all audio files
-export const getAllAudio = async (req, res) => {
+export const getAudio = async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(
@@ -155,7 +155,17 @@ export const getAllAudio = async (req, res) => {
       100,
     );
     const skip = (page - 1) * limit;
-    const q = String(req.query.q || "").trim();
+    const q = String(
+      req.query.q || req.query.query || req.query.search || "",
+    ).trim();
+    const rawType = String(
+      req.query.type || req.query.typeFilter || req.query.audioType || "",
+    ).trim();
+    const type = ["", "all", "undefined", "null"].includes(
+      rawType.toLowerCase(),
+    )
+      ? ""
+      : rawType;
 
     const escapeRegExp = (value) =>
       value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -179,6 +189,13 @@ export const getAllAudio = async (req, res) => {
           { category: { $regex: pattern, $options: "i" } },
           { artist_name: { $regex: pattern, $options: "i" } },
         ],
+      };
+    }
+
+    if (type) {
+      filter = {
+        ...filter,
+        type: type.toLowerCase(),
       };
     }
 
