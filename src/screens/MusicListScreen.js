@@ -1,3 +1,4 @@
+import { AD_UNIT_IDS } from "@/config/admob.config";
 import { useFavorites } from "@/context/favorites-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -48,13 +49,6 @@ if (!isExpoGo) {
     console.log("⚠️ AdMob not available");
   }
 }
-
-/* 🔐 PRODUCTION AD UNIT IDS */
-const AD_UNIT_IDS = {
-  BANNER: "ca-app-pub-2136043836079463/6534214524",
-  INTERSTITIAL: "ca-app-pub-2136043836079463/1855112220",
-};
-/* =============================================== */
 
 /* ---------------- SOUND WAVE BUTTON ---------------- */
 function PlayWaveButton({ playing, onPress, disabled }) {

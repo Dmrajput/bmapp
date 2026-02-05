@@ -1,3 +1,4 @@
+import { AD_UNIT_IDS } from "@/config/admob.config";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Audio } from "expo-av";
@@ -40,13 +41,6 @@ if (!isExpoGo) {
     console.warn("AdMob not available", e);
   }
 }
-
-/* 🔐 PRODUCTION AD UNIT IDS */
-const AD_UNIT_IDS = {
-  BANNER: "ca-app-pub-2136043836079463/6534214524",
-  INTERSTITIAL: "ca-app-pub-2136043836079463/1855112220",
-};
-/* ======================================================== */
 
 const ACCENT = "#1DB954";
 const BG = "#F5F6F8";
