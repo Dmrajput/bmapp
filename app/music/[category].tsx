@@ -4,5 +4,14 @@ import MusicListScreen from '../../src/screens/MusicListScreen';
 
 export default function MusicCategoryRoute() {
   const params = useLocalSearchParams();
-  return <MusicListScreen route={{ params }} />;
+  return (
+    <MusicListScreen
+      route={{
+        params: {
+          ...params,
+          type: params.type || "background music",
+        },
+      }}
+    />
+  );
 }

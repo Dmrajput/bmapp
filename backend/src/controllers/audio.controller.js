@@ -1,6 +1,37 @@
 import s3 from "../config/s3.js";
 import Audio from "../models/Audio.js";
 
+const normalizeAudioType = (value) =>
+  String(value || "")
+    .replace(/[\/_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+const escapeRegExp = (value) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const buildCategoryFilter = (value) => {
+  const normalized = String(value || "")
+    .replace(/[\/_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  const tokens = normalized.split(" ").filter(Boolean).map(escapeRegExp);
+  const pattern = tokens.length ? tokens.join(".*") : escapeRegExp(normalized);
+
+  return {
+    category: {
+      $regex: pattern,
+      $options: "i",
+    },
+  };
+};
+
 // export const uploadAudio = async (req, res) => {
 //   try {
 //     // Check if file exists - with upload.fields(), files are in req.files
@@ -68,7 +99,7 @@ export const uploadAudio = async (req, res) => {
     const title = req.body.title || "Untitled";
     const category = req.body.category || "General";
     const duration = parseInt(req.body.duration, 10) || 0;
-    const type = req.body.type || "music";
+    const type = normalizeAudioType(req.body.type || "music") || "music";
     const priority = Number.isFinite(Number(req.body.priority))
       ? Number(req.body.priority)
       : 0;
@@ -161,14 +192,14 @@ export const getAudio = async (req, res) => {
     const rawType = String(
       req.query.type || req.query.typeFilter || req.query.audioType || "",
     ).trim();
+    const rawCategory = String(
+      req.query.category || req.query.categoryFilter || "",
+    ).trim();
     const type = ["", "all", "undefined", "null"].includes(
       rawType.toLowerCase(),
     )
       ? ""
-      : rawType;
-
-    const escapeRegExp = (value) =>
-      value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      : normalizeAudioType(rawType);
     const normalize = (value) =>
       String(value || "")
         .replace(/[\p{Emoji_Presentation}\p{Emoji}\u200d\uFE0F]/gu, "")
@@ -195,7 +226,15 @@ export const getAudio = async (req, res) => {
     if (type) {
       filter = {
         ...filter,
-        type: type.toLowerCase(),
+        type,
+      };
+    }
+
+    const categoryFilter = buildCategoryFilter(rawCategory);
+    if (categoryFilter) {
+      filter = {
+        ...filter,
+        ...categoryFilter,
       };
     }
 
@@ -285,24 +324,20 @@ export const getAudioByCategory = async (req, res) => {
     );
     const skip = (page - 1) * limit;
 
-    const escapeRegExp = (value) =>
-      value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const searchValue = String(category || "").trim();
-    const normalized = searchValue
-      .replace(/[\/_-]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    const tokens = normalized.split(" ").filter(Boolean).map(escapeRegExp);
-    const pattern = tokens.length
-      ? tokens.join(".*")
-      : escapeRegExp(searchValue);
+    const rawType = String(
+      req.query.type || req.query.typeFilter || req.query.audioType || "",
+    ).trim();
+    const type = ["", "all", "undefined", "null"].includes(
+      rawType.toLowerCase(),
+    )
+      ? ""
+      : normalizeAudioType(rawType);
 
-    const filter = {
-      category: {
-        $regex: pattern,
-        $options: "i",
-      },
-    };
+    const filter = buildCategoryFilter(category) || {};
+
+    if (type) {
+      filter.type = type;
+    }
 
     const total = await Audio.countDocuments(filter);
     const audioList = await Audio.find(filter)

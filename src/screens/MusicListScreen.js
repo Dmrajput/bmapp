@@ -245,12 +245,21 @@ function ActionButton({ icon, color, bg, onPress }) {
 }
 
 /* ================= MAIN SCREEN ================= */
-export default function MemeSoundsScreen() {
+export default function MemeSoundsScreen({ route }) {
   const { toggleFavorite, isFavorite } = useFavorites();
+  const routeParams = route?.params || {};
+  const requestedType = useMemo(() => {
+    const routeType = String(routeParams.type || "").trim();
+    return routeType || "sound";
+  }, [routeParams.type]);
+  const requestedCategory = useMemo(
+    () => String(routeParams.category || "").trim(),
+    [routeParams.category],
+  );
+  const isBackgroundMusic = requestedType.toLowerCase() === "background music";
 
   const [list, setList] = useState([]);
   const [search, setSearch] = useState("");
-  const [type] = useState("sound");
   const [sortBy, setSortBy] = useState("latest"); // latest | trending
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -362,7 +371,8 @@ export default function MemeSoundsScreen() {
           page: pageToLoad,
           limit: PAGE_SIZE,
           query: search,
-          type,
+          type: requestedType,
+          category: requestedCategory,
         });
 
         setList((prev) => (replace ? res.data : [...prev, ...res.data]));
@@ -373,7 +383,7 @@ export default function MemeSoundsScreen() {
         setLoadingPage(false);
       }
     },
-    [search, type],
+    [requestedCategory, requestedType, search],
   );
 
   useEffect(() => {
@@ -433,12 +443,16 @@ export default function MemeSoundsScreen() {
   /* ================= UI ================= */
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Meme Sounds</Text>
+      <Text style={styles.header}>
+        {isBackgroundMusic ? "Background Music" : "Meme Sounds"}
+      </Text>
 
       <View style={styles.searchBox}>
         <Ionicons name="search" size={18} color="#6B7280" />
         <TextInput
-          placeholder="Search sounds..."
+          placeholder={
+            isBackgroundMusic ? "Search background music..." : "Search sounds..."
+          }
           value={search}
           onChangeText={setSearch}
           style={styles.searchInput}

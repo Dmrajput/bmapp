@@ -53,6 +53,7 @@ const apiService = {
     limit = 20,
     query = "",
     type = "",
+    category = "",
   } = {}) => {
     try {
       const qs = new URLSearchParams();
@@ -60,6 +61,7 @@ const apiService = {
       qs.set("limit", String(limit));
       if (query) qs.set("q", query);
       if (type) qs.set("type", type);
+      if (category) qs.set("category", category);
 
       const response = await fetch(`${API_BASE_URL}/audio?${qs.toString()}`, {
         method: "GET",
@@ -213,12 +215,14 @@ const apiService = {
     limit = 20,
     query = "",
     type = "",
+    category = "",
   } = {}) => {
     const result = await apiService.fetchAllAudioPaged({
       page,
       limit,
       query,
       type,
+      category,
     });
     return {
       data: (result.data || []).map((audio) =>
