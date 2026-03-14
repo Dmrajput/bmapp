@@ -18,80 +18,60 @@ export default function DashboardScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>🎧 ReelSound</Text>
-        <Text style={styles.headerSubtitle}>
-          Music & sounds for Reels, Shorts & Videos
-        </Text>
-      </View>
+    <LinearGradient
+      colors={["#080A12", "#0F1322", "#181C2E"]}
+      style={styles.screen}
+    >
+      <SafeAreaView style={styles.container}>
+        <View style={styles.heroGlow} />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* PRIMARY ACTIONS */}
-        <View style={styles.primaryGrid}>
-          <DashboardCard
-            title="🔊 Sounds"
-            subtitle="Meme & effects"
-            colors={["#22C55E", "#16A34A"]}
-            onPress={() => router.push("/music-list")}
-          />
-
-          <DashboardCard
-            title="🎬 Background Music"
-            subtitle="For videos"
-            colors={["#F97316", "#EA580C"]}
-            onPress={() => router.push("/songs")}
-          />
-          <DashboardCard
-            title="🎵 Music"
-            subtitle="Songs & tracks"
-            colors={["#6366F1", "#4F46E5"]}
-            onPress={() => router.push("/music")}
-          />
+        {/* HEADER */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>ReelSound</Text>
+          <Text style={styles.headerSubtitle}>
+            Pick your vibe and jump straight into neon sound pads.
+          </Text>
         </View>
 
-        {/* TRENDING SECTION */}
-        <Section title="🔥 Trending Now">
-          <HorizontalCard
-            title="Viral Reels Music"
-            onPress={() =>
-              router.push({ pathname: "/music", params: { tag: "viral" } })
-            }
-          />
-          {/* <HorizontalCard
-            title="Top Meme Sounds"
-            onPress={() => router.push("/songs")}
-          /> */}
-        </Section>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* PRIMARY ACTIONS */}
+          <View style={styles.primaryGrid}>
+            <DashboardCard
+              title="Sounds"
+              subtitle="Meme & effects"
+              colors={["#34D399", "#16A34A"]}
+              onPress={() => router.push("/music-list")}
+            />
 
-        {/* USE CASES */}
-        {/* <Section title="🎥 Use Cases">
-          <View style={styles.useCaseGrid}>
-            <MiniCard
-              title="Reels & Shorts"
-              onPress={() =>
-                router.push({ pathname: "/music", params: { tag: "reels" } })
-              }
+            <DashboardCard
+              title="Background Music"
+              subtitle="For videos"
+              colors={["#FB923C", "#EA580C"]}
+              onPress={() => router.push("/songs")}
             />
-            <MiniCard
-              title="Vlogs"
-              onPress={() =>
-                router.push({
-                  pathname: "/meme-sound",
-                  params: { tag: "vlog" },
-                })
-              }
+            <DashboardCard
+              title="Music"
+              subtitle="Songs & tracks"
+              colors={["#7C83FF", "#4338CA"]}
+              onPress={() => router.push("/music")}
             />
-            <MiniCard title="Gaming" onPress={() => router.push("/songs")} />
-            <MiniCard title="Comedy" onPress={() => router.push("/songs")} />
           </View>
-        </Section> */}
-      </ScrollView>
-    </SafeAreaView>
+
+          {/* TRENDING SECTION */}
+          <Section title="Trending Now">
+            <HorizontalCard
+              title="Viral Reels Music"
+              onPress={() =>
+                router.push({ pathname: "/music", params: { tag: "viral" } })
+              }
+            />
+          </Section>
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -152,85 +132,105 @@ function MiniCard({ title, onPress }) {
 ======================= */
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "transparent",
+  },
+  heroGlow: {
+    position: "absolute",
+    top: -140,
+    left: -24,
+    right: -24,
+    height: 260,
+    borderRadius: 240,
+    backgroundColor: "rgba(255,77,173,0.15)",
   },
 
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 10,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 29,
     fontWeight: "800",
-    color: "#111827",
+    color: "#F4F7FF",
   },
   headerSubtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: "#6B7280",
+    color: "#A3AED0",
   },
 
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 18,
+    paddingBottom: 36,
   },
 
   /* PRIMARY GRID */
   primaryGrid: {
-    marginTop: 10,
-    gap: 16,
+    marginTop: 8,
+    gap: 14,
   },
 
   bigCard: {
-    borderRadius: 22,
+    borderRadius: 24,
     overflow: "hidden",
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    shadowColor: "#000",
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 9,
   },
   bigCardGradient: {
-    padding: 22,
-    height: 110,
+    padding: 20,
+    height: 114,
     justifyContent: "space-between",
-    borderRadius: 22,
+    borderRadius: 24,
   },
   bigCardTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: "800",
     color: "#FFFFFF",
   },
   bigCardSubtitle: {
     fontSize: 14,
-    color: "#E5E7EB",
+    color: "rgba(255,255,255,0.9)",
   },
 
   /* SECTIONS */
   section: {
-    marginTop: 30,
+    marginTop: 28,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
-    marginBottom: 14,
-    color: "#111827",
+    marginBottom: 12,
+    color: "#F3F4FF",
   },
 
   /* HORIZONTAL */
   horizontalCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(17,21,33,0.92)",
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 18,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
   },
   horizontalText: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#111827",
+    fontWeight: "700",
+    color: "#E8ECFF",
   },
 
   /* MINI GRID */
@@ -241,18 +241,20 @@ const styles = StyleSheet.create({
   },
   miniCard: {
     width: "48%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(17,21,33,0.92)",
     padding: 18,
     borderRadius: 16,
     marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
   },
   miniText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#111827",
+    color: "#E8ECFF",
   },
 });

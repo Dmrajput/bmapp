@@ -195,113 +195,132 @@ export default function HomeScreen() {
   const [searchText, setSearchText] = useState("");
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Discover Music 🎧</Text>
-        <Text style={styles.headerSubtitle}>
-          Perfect background music for Reels & Shorts
-        </Text>
-      </View>
+    <LinearGradient
+      colors={["#080A12", "#0F1322", "#181C2E"]}
+      style={styles.screen}
+    >
+      <SafeAreaView style={styles.container}>
+        <View style={styles.heroGlow} />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search mood, reels, genre..."
-            placeholderTextColor="#9CA3AF"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Discover Music</Text>
+          <Text style={styles.headerSubtitle}>
+            Perfect background music for Reels and Shorts
+          </Text>
         </View>
 
-        {/* Category Sections */}
-        {CATEGORY_SECTIONS.map((section) => (
-          <View key={section.title} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-
-            <View style={styles.gridContainer}>
-              {section.data.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  activeOpacity={0.85}
-                  style={styles.categoryCard}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/music/[category]",
-                      params: { category: category.id },
-                    })
-                  }
-                >
-                  <LinearGradient
-                    colors={category.colors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.gradientBox}
-                  >
-                    <Text style={styles.categoryName}>{category.name}</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              ))}
-            </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search mood, reels, genre..."
+              placeholderTextColor="#7C86A8"
+              value={searchText}
+              onChangeText={setSearchText}
+            />
           </View>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+
+          {/* Category Sections */}
+          {CATEGORY_SECTIONS.map((section) => (
+            <View key={section.title} style={styles.section}>
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+
+              <View style={styles.gridContainer}>
+                {section.data.map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    activeOpacity={0.9}
+                    style={styles.categoryCard}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/music/[category]",
+                        params: { category: category.id },
+                      })
+                    }
+                  >
+                    <LinearGradient
+                      colors={category.colors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.gradientBox}
+                    >
+                      <Text style={styles.categoryName}>{category.name}</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB", // light background
+    backgroundColor: "transparent",
+  },
+  heroGlow: {
+    position: "absolute",
+    top: -140,
+    left: -24,
+    right: -24,
+    height: 260,
+    borderRadius: 240,
+    backgroundColor: "rgba(255,77,173,0.15)",
   },
 
   /* Header */
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 10,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 29,
     fontWeight: "800",
-    color: "#111827",
+    color: "#F4F7FF",
   },
   headerSubtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: "#6B7280",
+    color: "#A3AED0",
   },
 
   /* Scroll */
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingBottom: 40,
   },
 
   /* Search */
   searchContainer: {
-    marginVertical: 18,
+    marginVertical: 16,
   },
   searchInput: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 18,
     fontSize: 15,
-    color: "#111827",
+    color: "#F4F7FF",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "rgba(255,255,255,0.08)",
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    elevation: 6,
   },
 
   /* Section */
@@ -311,7 +330,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
+    color: "#F3F4FF",
     marginBottom: 14,
   },
 
@@ -328,12 +347,14 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     borderRadius: 18,
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(17,21,33,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    elevation: 7,
   },
   gradientBox: {
     height: 130,
@@ -344,7 +365,10 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#111827",
+    color: "#FFFFFF",
     lineHeight: 20,
+    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
 });

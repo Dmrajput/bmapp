@@ -1,17 +1,20 @@
 import React from 'react';
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import MusicListScreen from '../../src/screens/MusicListScreen';
 
 export default function MusicCategoryRoute() {
   const params = useLocalSearchParams();
   return (
-    <MusicListScreen
-      route={{
-        params: {
-          ...params,
-          type: params.type || "background music",
-        },
-      }}
-    />
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <MusicListScreen
+        route={{
+          params: {
+            ...params,
+            type: params.type || "background music",
+          },
+        }}
+      />
+    </>
   );
 }

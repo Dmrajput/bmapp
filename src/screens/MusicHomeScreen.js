@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Audio } from "expo-av";
 import Constants from "expo-constants";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -42,9 +43,9 @@ if (!isExpoGo) {
   }
 }
 
-const ACCENT = "#1DB954";
-const BG = "#F5F6F8";
-const CARD = "#FFFFFF";
+const ACCENT = "#7C83FF";
+const BG = "#080A12";
+const CARD = "rgba(20,24,36,0.92)";
 const PAGE_SIZE = 20;
 
 /* ---------------- EQUALIZER ---------------- */
@@ -290,80 +291,114 @@ export default function MusicListScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>Music</Text>
+    <LinearGradient colors={["#080A12", "#0E1222", "#15192C"]} style={styles.screen}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.heroGlow} />
 
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search music..."
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
+        <Text style={styles.headerTitle}>Music</Text>
 
-      {isLoading ? (
-        <ActivityIndicator size="large" color={ACCENT} />
-      ) : (
-        <FlatList
-          data={musicList}
-          renderItem={renderItem}
-          keyExtractor={(i) => i.id}
-          contentContainerStyle={{ paddingBottom: 140 }}
-          onEndReached={() =>
-            !isLoadingPage &&
-            hasMore &&
-            loadPage({
-              pageToLoad: page + 1,
-              query: searchQuery,
-              replace: false,
-            })
-          }
-          onEndReachedThreshold={0.6}
-          ListFooterComponent={
-            isLoadingPage ? (
-              <ActivityIndicator size="small" color={ACCENT} />
-            ) : null
-          }
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search music..."
+          placeholderTextColor="#7C86A8"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
-      )}
 
-      {/* -------- BANNER AD -------- */}
-      {BannerAd && BannerAdSize && !isExpoGo && (
-        <View style={{ alignItems: "center", paddingBottom: 6 }}>
-          <BannerAd
-            unitId={AD_UNIT_IDS.BANNER}
-            size={BannerAdSize.BANNER}
-            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+        {isLoading ? (
+          <ActivityIndicator size="large" color={ACCENT} style={styles.mainLoader} />
+        ) : (
+          <FlatList
+            data={musicList}
+            renderItem={renderItem}
+            keyExtractor={(i) => i.id}
+            contentContainerStyle={styles.listContent}
+            onEndReached={() =>
+              !isLoadingPage &&
+              hasMore &&
+              loadPage({
+                pageToLoad: page + 1,
+                query: searchQuery,
+                replace: false,
+              })
+            }
+            onEndReachedThreshold={0.6}
+            ListFooterComponent={
+              isLoadingPage ? (
+                <ActivityIndicator size="small" color={ACCENT} />
+              ) : null
+            }
           />
-        </View>
-      )}
-    </SafeAreaView>
+        )}
+
+        {/* -------- BANNER AD -------- */}
+        {BannerAd && BannerAdSize && !isExpoGo && (
+          <View style={styles.bannerWrap}>
+            <BannerAd
+              unitId={AD_UNIT_IDS.BANNER}
+              size={BannerAdSize.BANNER}
+              requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+            />
+          </View>
+        )}
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 /* ===================== STYLES ===================== */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
-  headerTitle: { fontSize: 28, fontWeight: "800", margin: 16 },
+  screen: { flex: 1 },
+  container: { flex: 1, backgroundColor: "transparent" },
+  heroGlow: {
+    position: "absolute",
+    top: -120,
+    left: -20,
+    right: -20,
+    height: 240,
+    borderRadius: 220,
+    backgroundColor: "rgba(255,77,173,0.14)",
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 10,
+    color: "#F4F7FF",
+  },
   searchInput: {
     backgroundColor: CARD,
     marginHorizontal: 16,
     padding: 12,
     borderRadius: 14,
+    color: "#F4F7FF",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
+  listContent: { paddingBottom: 138, paddingTop: 8 },
+  mainLoader: { marginTop: 24 },
   card: {
     backgroundColor: CARD,
     margin: 12,
     padding: 14,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 7,
   },
   cardActive: { borderColor: ACCENT, borderWidth: 2 },
-  title: { fontWeight: "700" },
+  title: { fontWeight: "700", color: "#F3F4FF" },
   actions: { flexDirection: "row", gap: 10 },
   shareBtn: {
-    backgroundColor: "#E2E8F0",
+    backgroundColor: "rgba(172,196,255,0.18)",
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -371,7 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   playBtn: {
-    backgroundColor: "#0F172A",
+    backgroundColor: "#111827",
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -381,4 +416,15 @@ const styles = StyleSheet.create({
   playBtnActive: { backgroundColor: ACCENT },
   eqContainer: { flexDirection: "row", gap: 3 },
   eqBar: { width: 3, backgroundColor: ACCENT, borderRadius: 2 },
+  bannerWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    paddingVertical: 6,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(148,163,184,0.25)",
+  },
 });
