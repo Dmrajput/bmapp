@@ -1,4 +1,6 @@
-// This file is redirected to use App.js
-// The main app entry point is now in App.js
+import HomeScreen from "@/src/screens/HomeScreen";
+import React from "react";
 
-export { default } from '../../App';
+export default function HomeTabRoute() {
+	return <HomeScreen />;
+}
